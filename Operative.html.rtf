@@ -1,0 +1,1816 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 <!DOCTYPE html>\
+<html lang="en">\
+<head>\
+    <meta charset="UTF-8">\
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">\
+    <title>OPERATIVE_2026_V5.15 - TARGET COMMANDER</title>\
+    <script src="https://cdn.tailwindcss.com"></script>\
+    <style>\
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;700&display=swap');\
+\
+        :root \{\
+            --neon-pink: #ff00ff;\
+            --neon-blue: #00f2ff;\
+            --neon-green: #0ddb44;\
+            --neon-yellow: #fcee0a;\
+            --neon-red: #ff3333;\
+            --neon-purple: #bd00ff;\
+            --dark-bg: #050507;\
+            --module-bg: #0d0d11;\
+            --terminal-font: 'Fira Code', 'Courier New', monospace;\
+            --mouse-x: 0.5;\
+            --mouse-y: 0.5;\
+        \}\
+\
+        body \{\
+            background-color: var(--dark-bg);\
+            color: var(--neon-blue);\
+            font-family: var(--terminal-font);\
+            font-size: 15px;\
+            margin: 0;\
+            padding: 0;\
+            overflow-x: hidden;\
+            min-height: 100vh;\
+            position: relative;\
+            cursor: crosshair;\
+        \}\
+\
+        /* 2. Analog Signal Noise (Grain) */\
+        .noise-overlay \{\
+            position: fixed;\
+            top: 0; left: 0; width: 100%; height: 100%;\
+            pointer-events: none;\
+            z-index: 9998;\
+            opacity: 0.05;\
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAGFBMVEUAAAA5OTkAAABERERmZmczMzOZmZlmZmYzMzOZBZ4FAAAACHRSTlMAMwA3ADMAMwczMzMzAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAJ0lEQVQ4jWNgGAWjYBSMglEwCkbBKBi5gH2A+Q/7P8j/Qf4H+Q/CDwCn9x7xZ0Yw7AAAAABJRU5ErkJggg==');\
+            animation: noise 0.2s infinite;\
+        \}\
+\
+        @keyframes noise \{\
+            0% \{ background-position: 0 0; \}\
+            100% \{ background-position: 100px 100px; \}\
+        \}\
+\
+        /* 1. CRT Power-On Animation */\
+        @keyframes crt-on \{\
+            0% \{ transform: scale(1, 0.002); opacity: 0; filter: brightness(3); \}\
+            50% \{ transform: scale(1, 0.002); opacity: 1; \}\
+            75% \{ transform: scale(1, 1.1); \}\
+            100% \{ transform: none; opacity: 1; filter: brightness(1); \}\
+        \}\
+\
+        .crt-active \{\
+            animation: crt-on 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;\
+            transform-origin: center;\
+        \}\
+\
+        /* Parallax Grid */\
+        body::before \{\
+            content: " ";\
+            display: block;\
+            position: fixed;\
+            top: -100px; left: -100px; right: -100px; bottom: -100px;\
+            background-image: \
+                linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),\
+                linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);\
+            background-size: 50px 50px;\
+            z-index: -1;\
+            transform: translate(calc(var(--mouse-x) * -20px), calc(var(--mouse-y) * -20px));\
+            pointer-events: none;\
+        \}\
+\
+        /* Hacker Module Chassis */\
+        .hacker-module \{\
+            background: var(--module-bg);\
+            position: relative;\
+            padding: 2px;\
+            clip-path: polygon(\
+                0% 20px, 20px 0%, \
+                calc(100% - 20px) 0%, 100% 20px, \
+                100% calc(100% - 20px), calc(100% - 20px) 100%, \
+                20px 100%, 0% calc(100% - 20px)\
+            );\
+            background: linear-gradient(135deg, var(--neon-blue) 0%, transparent 20%, transparent 80%, var(--neon-pink) 100%);\
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\
+        \}\
+\
+        .hacker-module.heartbeat \{ animation: breathe 3s infinite ease-in-out; \}\
+        @keyframes breathe \{\
+            0%, 100% \{ filter: brightness(1) drop-shadow(0 0 2px var(--neon-blue)); \}\
+            50% \{ filter: brightness(1.3) drop-shadow(0 0 10px var(--neon-blue)); \}\
+        \}\
+\
+        .module-inner \{\
+            background: var(--module-bg);\
+            background-image: \
+                linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px),\
+                linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px);\
+            background-size: 15px 15px;\
+            padding: 24px;\
+            height: 100%;\
+            position: relative;\
+            clip-path: polygon(\
+                0% 19px, 19px 0%, \
+                calc(100% - 19px) 0%, 100% 19px, \
+                100% calc(100% - 19px), calc(100% - 19px) 100%, \
+                19px 100%, 0% calc(100% - 19px)\
+            );\
+        \}\
+\
+        .scan-line \{\
+            position: absolute;\
+            top: -100px;\
+            left: 0;\
+            width: 100%;\
+            height: 100px;\
+            background: linear-gradient(to bottom, transparent, rgba(0, 242, 255, 0.1), transparent);\
+            border-bottom: 1px solid rgba(0, 242, 255, 0.3);\
+            pointer-events: none;\
+            z-index: 10;\
+            animation: scan 4s infinite linear;\
+        \}\
+        @keyframes scan \{ 0% \{ top: -100px; \} 100% \{ top: 100%; \} \}\
+\
+        .glitch-active \{ animation: action-glitch 0.2s 2; \}\
+        @keyframes action-glitch \{\
+            0% \{ transform: translate(0); \}\
+            25% \{ transform: translate(-5px, 2px); \}\
+            50% \{ transform: translate(5px, -2px); \}\
+            100% \{ transform: translate(0); \}\
+        \}\
+\
+        .input-wrapper \{ position: relative; width: 100%; z-index: 10; \}\
+        .input-wrapper:focus-within \{ z-index: 100; \}\
+        .input-wrapper::before, .input-wrapper::after \{\
+            content: "";\
+            position: absolute;\
+            width: 0; height: 100%;\
+            top: 0;\
+            border: 1px solid var(--neon-pink);\
+            transition: all 0.3s;\
+            opacity: 0;\
+            pointer-events: none;\
+        \}\
+        .input-wrapper::before \{ left: 0; border-right: none; \}\
+        .input-wrapper::after \{ right: 0; border-left: none; \}\
+        \
+        .input-wrapper:focus-within::before, .input-wrapper:focus-within::after \{\
+            width: 10px;\
+            opacity: 1;\
+        \}\
+\
+        .hacker-input \{\
+            background: #000;\
+            border: 1px solid rgba(0, 242, 255, 0.4);\
+            color: var(--neon-green);\
+            padding: 12px;\
+            font-size: 13px;\
+            width: 100%;\
+            transition: all 0.3s;\
+        \}\
+        .hacker-input:focus \{\
+            outline: none;\
+            border-color: transparent;\
+            background: rgba(255, 0, 255, 0.05);\
+        \}\
+\
+        select.hacker-input \{\
+            cursor: pointer;\
+            appearance: none;\
+            -webkit-appearance: none;\
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%230ddb44' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");\
+            background-repeat: no-repeat;\
+            background-position: right 10px center;\
+            background-size: 20px;\
+            padding-right: 30px;\
+        \}\
+\
+        select.hacker-input option \{\
+            background-color: var(--dark-bg);\
+            color: var(--neon-green);\
+        \}\
+\
+        .terminal-btn \{\
+            background: transparent;\
+            border: 1px solid var(--neon-pink);\
+            color: var(--neon-pink);\
+            padding: 12px;\
+            text-transform: uppercase;\
+            font-size: 13px;\
+            font-weight: bold;\
+            transition: all 0.2s;\
+            position: relative;\
+            overflow: hidden;\
+            width: 100%;\
+            cursor: pointer;\
+        \}\
+        .terminal-btn:hover:not(:disabled) \{\
+            background: var(--neon-pink);\
+            color: black;\
+            box-shadow: 0 0 20px var(--neon-pink);\
+        \}\
+\
+        /* Tooltip */\
+        #hex-tooltip \{\
+            position: fixed;\
+            background: rgba(0,0,0,0.9);\
+            border: 1px solid var(--neon-green);\
+            color: var(--neon-green);\
+            padding: 4px 8px;\
+            font-size: 10px;\
+            pointer-events: none;\
+            z-index: 10002;\
+            display: none;\
+            white-space: nowrap;\
+        \}\
+\
+        /* Corner Widgets */\
+        .corner-widget \{\
+            position: fixed;\
+            z-index: 9000;\
+            pointer-events: none;\
+            opacity: 0.6;\
+        \}\
+        .top-right \{ top: 20px; right: 20px; border-right: 2px solid var(--neon-blue); border-top: 2px solid var(--neon-blue); width: 50px; height: 50px; \}\
+        .bottom-left \{ bottom: 60px; left: 20px; border-left: 2px solid var(--neon-pink); border-bottom: 2px solid var(--neon-pink); width: 50px; height: 50px; \}\
+        .spin-dial \{\
+            width: 30px; height: 30px;\
+            border: 2px dashed var(--neon-green);\
+            border-radius: 50%;\
+            animation: spin 4s linear infinite;\
+            margin: 10px;\
+        \}\
+        @keyframes spin \{ 100% \{ transform: rotate(360deg); \} \}\
+\
+        /* Login & Other Styles */\
+        #login-terminal \{\
+            position: fixed;\
+            top: 0; left: 0; right: 0; bottom: 0;\
+            width: 100vw; height: 100vh;\
+            background: var(--dark-bg);\
+            z-index: 10000;\
+            display: flex;\
+            justify-content: center;\
+            align-items: center;\
+            padding: 20px;\
+            transition: opacity 1s ease;\
+            box-sizing: border-box;\
+            overflow: hidden;\
+        \}\
+        /* Matrix Canvas */\
+        #matrix-canvas \{\
+            position: absolute;\
+            inset: 0;\
+            width: 100vw; height: 100vh;\
+            z-index: 1;\
+            opacity: 0.4;\
+            pointer-events: none;\
+        \}\
+\
+        .auth-container \{ width: 100%; max-width: 600px; margin: auto; position: relative; z-index: 10; \}\
+        .boot-line \{ font-size: 14px; margin-bottom: 4px; \}\
+        #main-app \{ display: none; opacity: 0; transition: opacity 1.5s ease; \}\
+        #main-app.visible \{ display: block; opacity: 1; \}\
+        \
+        .glitch-text \{\
+            text-shadow: 3px 0 var(--neon-pink), -3px 0 var(--neon-blue);\
+            animation: glitch-anim 3s infinite linear alternate-reverse;\
+        \}\
+        @keyframes glitch-anim \{\
+            0% \{ transform: skew(0.5deg); \}\
+            5% \{ transform: skew(-0.5deg); text-shadow: -3px 0 var(--neon-pink), 3px 0 var(--neon-blue); \}\
+            10% \{ transform: skew(0deg); \}\
+            100% \{ transform: skew(0deg); \}\
+        \}\
+\
+        /* Load Meter */\
+        #neural-load-bar \{\
+            height: 4px; background: var(--neon-green); width: 0%;\
+            transition: width 0.5s, background 0.3s;\
+            box-shadow: 0 0 10px var(--neon-green);\
+        \}\
+\
+        /* Day Nodes */\
+        .day-node \{\
+            background: rgba(13, 13, 17, 0.8);\
+            border-left: 3px solid rgba(0, 242, 255, 0.2);\
+            margin-bottom: 12px;\
+            transition: all 0.3s;\
+        \}\
+        .day-node.active-protocol \{\
+            border-left-color: var(--neon-pink);\
+            background: rgba(255, 0, 255, 0.08);\
+        \}\
+        .day-node-header \{ padding: 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; \}\
+        .day-node-content \{ max-height: 0; overflow: hidden; transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1); padding: 0 18px; \}\
+        .day-node.expanded .day-node-content \{ max-height: 2000px; padding: 20px; border-top: 2px solid var(--neon-blue); animation: draw-border 0.4s ease-out; \}\
+        @keyframes draw-border \{ 0% \{ width: 0; opacity: 0; \} 100% \{ width: 100%; opacity: 1; \} \}\
+\
+        /* General UI Elements */\
+        .tx-log-item \{ font-size: 12px; display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(0, 242, 255, 0.1); \}\
+        .milestone-marker \{ position: absolute; top: 0; width: 1px; height: 100%; background: rgba(0, 242, 255, 0.4); box-shadow: 0 0 5px var(--neon-blue); z-index: 5; \}\
+        ::-webkit-scrollbar \{ width: 6px; \}\
+        ::-webkit-scrollbar-thumb \{ background: var(--neon-blue); \}\
+        .module-header \{ display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0, 242, 255, 0.3); padding-bottom: 10px; margin-bottom: 20px; \}\
+        .status-light \{ width: 8px; height: 8px; border-radius: 50%; background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); animation: pulse 2s infinite; \}\
+        \
+        /* Waveform */\
+        #waveform-container \{ width: 100px; height: 20px; display: flex; align-items: center; gap: 2px; \}\
+        .wave-bar \{ width: 3px; height: 5px; background: var(--neon-green); transition: height 0.1s; \}\
+\
+        /* KPI Stats */\
+        .kpi-stat \{ text-align: center; border: 1px solid #222; padding: 5px; background: rgba(0,0,0,0.5); \}\
+        .kpi-val \{ font-size: 18px; font-weight: bold; color: var(--neon-yellow); text-shadow: 0 0 5px var(--neon-yellow); \}\
+        .kpi-label \{ font-size: 9px; opacity: 0.7; \}\
+        \
+        /* Schedule Time Blocks */\
+        .schedule-time \{ color: var(--neon-blue); font-weight: bold; font-family: monospace; min-width: 65px; \}\
+        .schedule-line \{ border-left: 1px dashed rgba(0, 242, 255, 0.3); padding-left: 15px; margin-left: 5px; position: relative; \}\
+        .schedule-line::before \{ content: ''; position: absolute; left: -3px; top: 6px; width: 5px; height: 5px; background: var(--neon-pink); border-radius: 50%; \}\
+\
+        /* --- MARKET TICKER --- */\
+        #market-ticker-section \{\
+            margin-top: 1rem;\
+            margin-bottom: 2rem;\
+            width: 100%;\
+            overflow: hidden;\
+            background: rgba(0,0,0,0.6);\
+            border-top: 1px solid var(--neon-blue);\
+            border-bottom: 1px solid var(--neon-blue);\
+            position: relative;\
+            height: 40px;\
+            display: flex;\
+            align-items: center;\
+        \}\
+        #market-ticker-track \{ display: flex; white-space: nowrap; animation: ticker-scroll 120s linear infinite; width: max-content; \}\
+        .ticker-item \{ display: inline-flex; align-items: center; margin-right: 60px; font-family: monospace; font-size: 14px; font-weight: bold; \}\
+        .ticker-symbol \{ color: var(--neon-blue); margin-right: 8px; \}\
+        .ticker-price \{ color: #fff; margin-right: 8px; \}\
+        .ticker-up \{ color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); \}\
+        .ticker-down \{ color: var(--neon-red); text-shadow: 0 0 5px var(--neon-red); \}\
+        @keyframes ticker-scroll \{ 0% \{ transform: translateX(0); \} 100% \{ transform: translateX(-50%); \} \}\
+        #market-ticker-section:hover #market-ticker-track \{ animation-play-state: paused; \}\
+\
+        /* --- ACTION QUEUE CHECKLIST --- */\
+        .task-item \{ display: flex; align-items: center; padding: 8px; border: 1px solid rgba(0, 242, 255, 0.1); background: rgba(0,0,0,0.3); margin-bottom: 6px; transition: all 0.2s; \}\
+        .task-item:hover \{ border-color: var(--neon-blue); transform: translateX(5px); \}\
+        .task-checkbox \{ cursor: pointer; margin-right: 12px; font-family: monospace; font-weight: bold; font-size: 16px; color: var(--neon-pink); min-width: 24px; \}\
+        .task-content \{ flex-grow: 1; font-size: 13px; color: #fff; \}\
+        .task-done \{ text-decoration: line-through; color: var(--neon-green); opacity: 0.5; text-shadow: 0 0 5px var(--neon-green); \}\
+        .task-delete \{ opacity: 0; color: var(--neon-red); font-size: 10px; cursor: pointer; margin-left: 8px; transition: opacity 0.2s; \}\
+        .task-item:hover .task-delete \{ opacity: 1; \}\
+\
+        /* --- EDITOR MODAL --- */\
+        #protocol-editor-modal \{ position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 10005; display: none; justify-content: center; align-items: center; \}\
+        \
+        /* --- NAV TABS --- */\
+        #nav-array \{ display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 242, 255, 0.2); padding-bottom: 10px; flex-wrap: wrap; \}\
+        .nav-tab \{ font-family: var(--terminal-font); font-size: 12px; color: var(--neon-blue); padding: 8px 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; opacity: 0.6; transition: all 0.3s; border: 1px solid transparent; \}\
+        .nav-tab:hover \{ opacity: 1; text-shadow: 0 0 5px var(--neon-blue); \}\
+        .nav-tab.active-tab \{ opacity: 1; border: 1px solid var(--neon-pink); background: rgba(255, 0, 255, 0.1); color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink); \}\
+        .hidden \{ display: none !important; \}\
+\
+        /* --- RANKING SYSTEM UI --- */\
+        .rank-badge \{ display: inline-flex; align-items: center; border: 1px solid var(--neon-yellow); padding: 4px 12px; font-size: 11px; background: rgba(252, 238, 10, 0.1); margin-left: 10px; box-shadow: 0 0 10px rgba(252, 238, 10, 0.2); \}\
+        .rank-label \{ color: var(--neon-yellow); font-weight: bold; margin-right: 5px; \}\
+        .rank-val \{ color: #fff; \}\
+        .xp-bar-container \{ width: 100px; height: 6px; background: #222; margin-left: 8px; border: 1px solid #444; position: relative; \}\
+        .xp-bar-fill \{ height: 100%; background: var(--neon-yellow); width: 0%; transition: width 0.5s ease; box-shadow: 0 0 5px var(--neon-yellow); \}\
+\
+        /* --- CALENDAR UI --- */\
+        .cal-grid \{ display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.3); \}\
+        .cal-header-cell \{ background: rgba(0,0,0,0.8); color: var(--neon-blue); font-size: 10px; font-weight: bold; text-align: center; padding: 8px 0; text-transform: uppercase; \}\
+        .cal-day-cell \{ background: rgba(0,0,0,0.4); min-height: 100px; padding: 4px; border: 1px solid rgba(0, 242, 255, 0.1); position: relative; transition: all 0.2s; font-size: 12px; color: #fff; \}\
+        .cal-day-cell:hover \{ background: rgba(0, 242, 255, 0.05); \}\
+        .cal-day-cell.today \{ border: 1px solid var(--neon-pink); box-shadow: inset 0 0 10px rgba(255, 0, 255, 0.1); \}\
+        .cal-day-cell.other-month \{ opacity: 0.3; \}\
+        .cal-event \{ margin-top: 2px; padding: 2px 4px; font-size: 9px; background: rgba(0,0,0,0.8); border-left: 2px solid; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; align-items: center; \}\
+        .cal-event.done \{ border-left-color: var(--neon-green) !important; color: var(--neon-green) !important; text-decoration: line-through; opacity: 0.6; \}\
+        .cal-event:hover .del-btn \{ opacity: 1; \}\
+        .del-btn \{ opacity: 0; font-weight: bold; color: var(--neon-red); margin-left: 4px; transition: opacity 0.2s; \}\
+        \
+        /* Year View */\
+        .year-grid \{ display: grid; grid-template-columns: repeat(1, 1fr); gap: 1rem; \}\
+        @media (min-width: 768px) \{ .year-grid \{ grid-template-columns: repeat(3, 1fr); \} \}\
+        @media (min-width: 1024px) \{ .year-grid \{ grid-template-columns: repeat(4, 1fr); \} \}\
+        .mini-cal \{ border: 1px solid rgba(0, 242, 255, 0.2); padding: 8px; background: rgba(0,0,0,0.5); cursor: pointer; transition: all 0.2s; \}\
+        .mini-cal:hover \{ border-color: var(--neon-pink); \}\
+        .mini-cal-title \{ text-align: center; font-size: 12px; font-weight: bold; color: var(--neon-blue); margin-bottom: 4px; \}\
+        .mini-cal-grid \{ display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; \}\
+        .mini-day \{ height: 10px; width: 10px; margin: auto; background: rgba(255,255,255,0.05); border-radius: 1px; \}\
+        .mini-day.has-event \{ background: var(--neon-green); box-shadow: 0 0 3px var(--neon-green); \}\
+\
+        /* Calculator Tabs */\
+        .calc-tabs \{ display: flex; border-bottom: 1px solid rgba(0, 242, 255, 0.3); margin-bottom: 10px; \}\
+        .calc-tab \{ flex: 1; text-align: center; font-size: 10px; padding: 6px; cursor: pointer; color: var(--neon-blue); opacity: 0.6; transition: all 0.2s; \}\
+        .calc-tab:hover \{ opacity: 1; background: rgba(0, 242, 255, 0.1); \}\
+        .calc-tab.active \{ opacity: 1; border-bottom: 2px solid var(--neon-pink); color: var(--neon-pink); font-weight: bold; \}\
+\
+        /* WAR ROOM KANBAN */\
+        .kanban-board \{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; height: 600px; overflow-x: auto; \}\
+        .kanban-col \{ background: rgba(0,0,0,0.3); border: 1px solid rgba(0, 242, 255, 0.2); padding: 10px; display: flex; flex-direction: column; \}\
+        .kanban-col-header \{ text-align: center; font-size: 11px; font-weight: bold; color: var(--neon-blue); border-bottom: 1px solid rgba(0, 242, 255, 0.2); padding-bottom: 8px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; \}\
+        .kanban-card \{ background: var(--module-bg); border: 1px solid rgba(0, 242, 255, 0.2); padding: 10px; margin-bottom: 8px; cursor: move; transition: all 0.2s; position: relative; \}\
+        .kanban-card:hover \{ border-color: var(--neon-pink); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.5); \}\
+        .card-title \{ font-weight: bold; font-size: 12px; color: #fff; margin-bottom: 4px; \}\
+        .card-val \{ font-size: 10px; color: var(--neon-green); font-family: monospace; \}\
+        .card-controls \{ display: flex; justify-content: space-between; margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); pt-2; \}\
+        .card-btn \{ font-size: 9px; color: #666; cursor: pointer; \}\
+        .card-btn:hover \{ color: #fff; \}\
+\
+        /* FOLDER LIST UI */\
+        .folder-item \{ \
+            padding: 12px; \
+            background: rgba(0,0,0,0.4); \
+            border: 1px solid rgba(0, 242, 255, 0.1); \
+            margin-bottom: 8px; \
+            cursor: pointer; \
+            transition: all 0.2s;\
+            display: flex;\
+            align-items: center;\
+            gap: 12px;\
+            position: relative;\
+            overflow: hidden;\
+        \}\
+        .folder-item:hover \{ border-color: var(--neon-blue); background: rgba(0, 242, 255, 0.05); transform: translateX(5px); \}\
+        .folder-item.active \{ border-color: var(--neon-pink); background: rgba(255, 0, 255, 0.05); box-shadow: 0 0 15px rgba(255, 0, 255, 0.1); \}\
+        .folder-item.active::before \{ content:''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: var(--neon-pink); \}\
+        \
+        .folder-icon \{ color: var(--neon-yellow); font-size: 14px; \}\
+        .folder-name \{ font-size: 13px; color: #fff; font-weight: bold; flex: 1; letter-spacing: 0.5px; \}\
+\
+        /* NEW INTEL TABS */\
+        .intel-tabs \{ display: flex; border-bottom: 1px solid rgba(0, 242, 255, 0.3); margin-bottom: 15px; \}\
+        .intel-tab \{ \
+            flex: 1; text-align: center; padding: 12px; font-size: 11px; cursor: pointer; \
+            color: var(--neon-blue); opacity: 0.6; transition: all 0.2s; border-bottom: 2px solid transparent; \
+            letter-spacing: 1px; font-weight: bold;\
+        \}\
+        .intel-tab:hover \{ opacity: 1; background: rgba(0, 242, 255, 0.05); \}\
+        .intel-tab.active \{ opacity: 1; border-bottom-color: var(--neon-pink); color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink); \}\
+        \
+        /* HOLLOW DOSSIER BOX */\
+        .dossier-box \{\
+            border: 1px solid var(--neon-blue);\
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);\
+            background: rgba(13, 13, 17, 0.95);\
+            position: relative;\
+            height: 100%;\
+            display: flex;\
+            flex-direction: column;\
+            animation: dossier-open 0.4s cubic-bezier(0.23, 1, 0.32, 1);\
+        \}\
+        @keyframes dossier-open \{\
+            0% \{ opacity: 0; transform: scale(0.95) translateY(20px); \}\
+            100% \{ opacity: 1; transform: scale(1) translateY(0); \}\
+        \}\
+\
+    </style>\
+</head>\
+<body class="p-4 md:p-8">\
+\
+    <!-- 2. Noise Overlay -->\
+    <div class="noise-overlay"></div>\
+\
+    <!-- 3. Hex Tooltip -->\
+    <div id="hex-tooltip"></div>\
+\
+    <!-- 5. Corner Widgets -->\
+    <div class="corner-widget top-right"><div class="spin-dial"></div></div>\
+    <div class="corner-widget bottom-left"><div class="spin-dial" style="border-color: var(--neon-pink); animation-direction: reverse;"></div></div>\
+\
+    <!-- PROTOCOL EDITOR MODAL -->\
+    <div id="protocol-editor-modal">\
+        <div class="hacker-module w-full max-w-md">\
+            <div class="module-inner">\
+                <div class="module-header"><span class="text-xs font-bold text-neon-yellow">OVERRIDE_PROTOCOL</span><div class="status-light" style="background: var(--neon-yellow);"></div></div>\
+                <div class="space-y-4">\
+                    <input type="text" id="edit-time" class="hacker-input" placeholder="TIME (e.g. 9:00 AM)">\
+                    <input type="text" id="edit-cat" class="hacker-input" placeholder="CATEGORY (e.g. INTEL)">\
+                    <textarea id="edit-text" class="hacker-input h-24" placeholder="MISSION OBJECTIVE..."></textarea>\
+                    <div class="grid grid-cols-2 gap-4">\
+                        <button id="btn-editor-save" class="terminal-btn hex-trigger" data-id="COMMIT">COMMIT</button>\
+                        <button id="btn-editor-cancel" class="terminal-btn" style="border-color: var(--neon-red); color: var(--neon-red);">ABORT</button>\
+                    </div>\
+                </div>\
+            </div>\
+        </div>\
+    </div>\
+\
+    <!-- CONFIRMATION MODAL -->\
+    <div id="confirmation-modal" class="fixed top-0 left-0 w-full h-full bg-black/90 z-[20000] hidden justify-center items-center">\
+        <div class="hacker-module max-w-sm w-full">\
+            <div class="module-inner text-center">\
+                <div class="text-neon-red font-bold text-xl mb-4">WARNING: PURGE DATA?</div>\
+                <div id="confirm-msg" class="mb-6 text-sm opacity-80">This action cannot be undone.</div>\
+                <div class="flex gap-4 justify-center">\
+                    <button id="btn-confirm-yes" class="terminal-btn border-neon-red text-neon-red hover:bg-neon-red hover:text-black">CONFIRM</button>\
+                    <button id="btn-confirm-no" class="terminal-btn">CANCEL</button>\
+                </div>\
+            </div>\
+        </div>\
+    </div>\
+\
+    <!-- STAGE EDITOR MODAL -->\
+    <div id="stage-editor-modal" class="fixed top-0 left-0 w-full h-full bg-black/90 z-[20000] hidden justify-center items-center">\
+        <div class="hacker-module max-w-sm w-full">\
+            <div class="module-inner text-center">\
+                <div class="text-neon-blue font-bold text-sm mb-4 tracking-widest">RECONFIGURE_COLUMN</div>\
+                <div class="input-wrapper mb-6"><input type="text" id="edit-stage-input" class="hacker-input text-center font-bold" placeholder="NEW_NAME"></div>\
+                <div class="flex gap-4 justify-center">\
+                    <button id="btn-stage-save" class="terminal-btn">COMMIT</button>\
+                    <button id="btn-stage-cancel" class="terminal-btn" style="border-color: var(--neon-red); color: var(--neon-red);">ABORT</button>\
+                </div>\
+            </div>\
+        </div>\
+    </div>\
+\
+    <!-- LOGIN HUD -->\
+    <div id="login-terminal">\
+        <canvas id="matrix-canvas"></canvas>\
+        <div class="auth-container">\
+            <div class="hacker-module">\
+                <div class="module-inner">\
+                    <div class="scan-line"></div>\
+                    <div id="boot-sequence">\
+                        <div class="boot-line text-pink-500 font-bold">>> INITIALIZING_HUD_V5.15_TARGET_COMMANDER</div>\
+                        <div class="boot-line">>> MOUNTING_CHASSIS... [OK]</div>\
+                        <div class="boot-line">>> ESTABLISHING_COMMS_LINK... [OK]</div>\
+                        <div class="boot-line">>> SECURING_INTEL_ARCHIVES... [OK]</div>\
+                        <br>\
+                        <div class="boot-line text-cyan-400">OPERATIVE_ID: 2026_TAC_COMMAND</div>\
+                        <button id="btn-login" class="terminal-btn mt-6 hex-trigger" data-id="AUTH_GATE_01">INITIATE_NEURAL_LINK</button>\
+                    </div>\
+                    <div id="hacking-sequence" style="display:none;" class="text-xs h-60 overflow-hidden opacity-80 leading-relaxed font-mono"></div>\
+                    <div id="access-granted" style="display:none;" class="text-green-500 font-bold text-center mt-4 text-3xl tracking-[12px] glitch-text">\
+                        ACCESS_GRANTED\
+                    </div>\
+                    \
+                    <!-- NEW: STARTUP TASK CONFIRMATION MODAL -->\
+                    <div id="startup-task-modal" style="display:none;" class="flex-col items-center justify-center h-60 w-full animate-[crt-on_0.4s_forwards]">\
+                        <h2 class="text-neon-red font-bold tracking-widest text-center mb-4 border-b border-neon-red/30 pb-2 w-full">URGENT_DIRECTIVES_DETECTED</h2>\
+                        <div id="startup-task-list" class="space-y-2 mb-6 w-full flex-1 overflow-y-auto pr-2 text-sm text-gray-300 font-mono custom-scrollbar"></div>\
+                        <button id="btn-accept-tasks" class="terminal-btn border-neon-green text-neon-green hover:bg-neon-green hover:text-black mt-auto w-full">ACCEPT_&_DEPLOY</button>\
+                    </div>\
+\
+                </div>\
+            </div>\
+        </div>\
+    </div>\
+\
+    <!-- MAIN APP HUD -->\
+    <div id="main-app" class="p-4 md:p-8">\
+        <header class="text-center mb-4">\
+            <h1 id="mission-header" class="glitch-text text-5xl md:text-7xl font-bold tracking-tighter mb-4">MISSION_2026</h1>\
+            \
+            <!-- DAILY INTEL (QUOTE) -->\
+            <div id="daily-quote-container" class="mb-4 min-h-[30px] flex items-center justify-center">\
+                <p id="daily-quote" class="text-sm md:text-base text-neon-pink font-bold font-mono tracking-widest uppercase opacity-90 text-shadow-glow text-center max-w-4xl px-4"></p>\
+            </div>\
+\
+            <div class="flex flex-wrap justify-center items-center gap-8 mb-6">\
+                <div id="system-clock" class="text-green-400 text-sm font-bold border-b-2 border-green-500/20 px-4">00:00:00</div>\
+                \
+                <!-- RANK DISPLAY -->\
+                <div id="rank-display" class="rank-badge hidden">\
+                    <span class="rank-label" id="rank-title">INITIATE</span>\
+                    <span class="rank-val" id="rank-xp">0 XP</span>\
+                    <div class="xp-bar-container">\
+                        <div class="xp-bar-fill" id="rank-bar-fill"></div>\
+                    </div>\
+                </div>\
+\
+                <div id="waveform-container">\
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>\
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>\
+                    <div class="wave-bar"></div><div class="wave-bar"></div>\
+                </div>\
+\
+                <div id="timer-chassis" class="hacker-module heartbeat">\
+                    <div class="module-inner !py-2 !px-6 flex items-center gap-6">\
+                        <span id="timer-label" class="text-xs opacity-70 tracking-widest">IDLE</span>\
+                        <span id="focus-timer-display" class="font-bold text-3xl min-w-[100px]">25:00</span>\
+                        <button id="btn-toggle-timer" class="terminal-btn px-4 py-1 text-[10px] w-auto hex-trigger" data-id="TIMER_TOGGLE">TOGGLE</button>\
+                    </div>\
+                </div>\
+            </div>\
+            \
+            <!-- NAV ARRAY -->\
+            <nav id="nav-array">\
+                <div class="nav-tab active-tab" id="tab-command" onclick="window.switchTab('dashboard')">COMMAND_CENTER</div>\
+                <div class="nav-tab" id="tab-warroom" onclick="window.switchTab('warroom')">WAR_ROOM</div>\
+                <div class="nav-tab" id="tab-marketing" onclick="window.switchTab('marketing')">MARKETING_OPS</div>\
+                <div class="nav-tab" id="tab-crm" onclick="window.switchTab('crm')">TARGET_DATABASE</div>\
+                <div class="nav-tab" id="tab-intel" onclick="window.switchTab('intel')">INTEL_UPLINK</div>\
+            </nav>\
+        </header>\
+\
+        <!-- VIEW: DASHBOARD (Default) -->\
+        <div id="view-dashboard">\
+            <!-- GCI -->\
+            <section id="gci-accumulator" class="mb-4 max-w-5xl mx-auto px-2">\
+                <div class="hacker-module heartbeat">\
+                    <div class="module-inner !p-6">\
+                        <div class="flex justify-between items-end mb-3">\
+                            <span class="text-sm font-bold text-neon-yellow tracking-widest uppercase">Mission_Objective: $100,000 GCI</span>\
+                            <span id="gci-text" class="text-2xl font-bold text-neon-green glitch-text">0.0% SYNCED ($0)</span>\
+                        </div>\
+                        <div class="h-14 w-full bg-black/60 border-2 border-neon-pink/60 relative overflow-hidden rounded-sm shadow-[0_0_20px_rgba(255,0,255,0.2)]">\
+                            <div class="milestone-marker" style="left: 25%; border-left: 1px dashed var(--neon-blue); opacity: 0.6;"></div>\
+                            <div class="milestone-marker" style="left: 50%; border-left: 2px solid var(--neon-blue);"></div>\
+                            <div class="milestone-marker" style="left: 75%; border-left: 1px dashed var(--neon-blue); opacity: 0.6;"></div>\
+                            <div id="gci-bar" class="h-full bg-gradient-to-r from-green-900 via-neon-green to-green-400 shadow-[0_0_30px_var(--neon-green)] transition-all duration-1000 relative z-10 opacity-90" style="width: 0%"></div>\
+                        </div>\
+                        <div class="flex justify-between text-[10px] text-cyan-400 mt-2 font-mono opacity-80">\
+                            <span>START</span><span>$25k</span><span>$50k [BREAKPOINT]</span><span>$75k</span><span>MISSION_COMPLETE</span>\
+                        </div>\
+                    </div>\
+                </div>\
+            </section>\
+            <!-- VAULT -->\
+            <section id="investment-vault" class="mb-2 max-w-4xl mx-auto px-4">\
+                <div class="hacker-module" style="transform: scale(0.95);">\
+                    <div class="module-inner !p-4 !bg-black/80">\
+                        <div class="flex justify-between items-end mb-2">\
+                            <span class="text-xs font-bold text-neon-purple tracking-widest uppercase">INVESTMENT_VAULT: $25,000</span>\
+                            <span id="invest-text" class="text-lg font-bold text-neon-purple glitch-text">0.0% SECURED ($0)</span>\
+                        </div>\
+                        <div class="h-8 w-full bg-black/80 border border-neon-purple/50 relative overflow-hidden rounded-sm">\
+                             <div id="invest-bar" class="h-full bg-gradient-to-r from-purple-900 via-neon-purple to-purple-400 shadow-[0_0_15px_var(--neon-purple)] transition-all duration-1000 relative z-10 opacity-80" style="width: 0%"></div>\
+                        </div>\
+                    </div>\
+                </div>\
+            </section>\
+            <!-- TICKER -->\
+            <div id="market-ticker-section"><div id="market-ticker-track"><span class="ticker-item text-neon-blue">ESTABLISHING_UPLINK...</span></div></div>\
+            <!-- QUEUE -->\
+            <section id="daily-ops-checklist" class="mb-8 max-w-5xl mx-auto px-2">\
+                <div class="hacker-module">\
+                    <div class="module-inner">\
+                        <div class="module-header"><span class="text-xs font-bold text-neon-pink">IMMEDIATE_ACTION_QUEUE</span><div class="status-light" style="background: var(--neon-pink);"></div></div>\
+                        <div class="flex gap-2 mb-4">\
+                            <input type="text" id="new-task-input" class="hacker-input" placeholder="ENTER_DIRECTIVE...">\
+                            <button id="btn-add-task" class="terminal-btn w-32 hex-trigger" data-id="ADD_TASK">ADD</button>\
+                        </div>\
+                        <div id="task-list" class="space-y-1 max-h-60 overflow-y-auto pr-2"></div>\
+                    </div>\
+                </div>\
+            </section>\
+            <!-- GRID -->\
+            <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">\
+                <section class="hacker-module" id="module-kpi">\
+                    <div class="module-inner">\
+                        <div class="module-header"><span class="text-xs font-bold">KPI_VECTOR</span><div class="status-light" style="background: var(--neon-yellow);"></div></div>\
+                        <div class="grid grid-cols-3 gap-2 mb-4">\
+                            <div class="kpi-stat"><div class="kpi-val" id="val-dials">0</div><div class="kpi-label">DIALS</div></div>\
+                            <div class="kpi-stat"><div class="kpi-val" id="val-contacts">0</div><div class="kpi-label">CONTACTS</div></div>\
+                            <div class="kpi-stat"><div class="kpi-val" id="val-appts">0</div><div class="kpi-label">APPTS</div></div>\
+                        </div>\
+                        <div class="space-y-2">\
+                            <button onclick="window.updateKPI('dials')" class="terminal-btn text-xs">+1 DIAL [+5 XP]</button>\
+                            <button onclick="window.updateKPI('contacts')" class="terminal-btn text-xs">+1 CONTACT [+20 XP]</button>\
+                            <button onclick="window.updateKPI('appts')" class="terminal-btn text-xs" style="color: var(--neon-yellow); border-color: var(--neon-yellow);">+1 APPT_SET [+50 XP]</button>\
+                        </div>\
+                        <div class="mt-4 text-[10px] space-y-1 opacity-70 border-t border-gray-800 pt-2">\
+                            <div class="flex justify-between"><span>CONTACT_RATE:</span> <span id="rate-contact" class="text-green-400">0%</span></div>\
+                            <div class="flex justify-between"><span>BOOK_RATE:</span> <span id="rate-book" class="text-green-400">0%</span></div>\
+                        </div>\
+                    </div>\
+                </section>\
+                <section class="hacker-module" id="module-fin">\
+                    <div class="module-inner">\
+                        <div class="module-header"><span class="text-xs font-bold">FIN_INPUT_TERMINAL</span><div class="status-light"></div></div>\
+                        <div class="space-y-4">\
+                            <div class="input-wrapper"><input type="number" id="deal-amount" class="hacker-input" placeholder="AMOUNT ($)"></div>\
+                            <div class="input-wrapper">\
+                                <input type="text" id="deal-type" class="hacker-input" list="deal-type-list" placeholder="TYPE (e.g. CLOSED / PENDING)">\
+                                <datalist id="deal-type-list">\
+                                    <option value="CLOSED">CLOSED (GCI)</option>\
+                                    <option value="PENDING">PENDING (PIPE)</option>\
+                                    <option value="INVESTMENT">INVESTMENT (VAULT)</option>\
+                                </datalist>\
+                            </div>\
+                            <button id="btn-record" class="terminal-btn hex-trigger" data-id="EXECUTE_LOG">LOG_TRANSACTION</button>\
+                            <div id="transaction-history" class="h-28 overflow-y-auto mt-4 bg-black/20 p-2 border-t border-gray-800"></div>\
+                        </div>\
+                    </div>\
+                </section>\
+                \
+                <!-- RAPID VALUATION -->\
+                <section class="hacker-module" id="module-math">\
+                    <div class="module-inner">\
+                        <div class="module-header"><span class="text-xs font-bold">RAPID_VALUATION</span><div class="status-light"></div></div>\
+                        <div class="calc-tabs">\
+                            <div class="calc-tab active" onclick="window.switchCalc('cap', this)">CAP_RATE</div>\
+                            <div class="calc-tab" onclick="window.switchCalc('mtg', this)">MORTGAGE</div>\
+                            <div class="calc-tab" onclick="window.switchCalc('coc', this)">CASH_ON_CASH</div>\
+                        </div>\
+                        <div id="calc-view-cap" class="space-y-3">\
+                            <div class="input-wrapper"><input type="number" id="calc-price" class="hacker-input" placeholder="PRICE ($)"></div>\
+                            <div class="input-wrapper"><input type="number" id="calc-noi" class="hacker-input" placeholder="NOI ($)"></div>\
+                            <button onclick="window.runCalc('cap')" class="terminal-btn">RUN_CAP_RATE</button>\
+                        </div>\
+                        <div id="calc-view-mtg" class="space-y-3 hidden">\
+                            <div class="input-wrapper"><input type="number" id="calc-loan" class="hacker-input" placeholder="LOAN_AMOUNT ($)"></div>\
+                            <div class="grid grid-cols-2 gap-2">\
+                                <div class="input-wrapper"><input type="number" id="calc-rate" class="hacker-input" placeholder="RATE (%)"></div>\
+                                <div class="input-wrapper"><input type="number" id="calc-term" class="hacker-input" placeholder="YEARS"></div>\
+                            </div>\
+                            <button onclick="window.runCalc('mtg')" class="terminal-btn">RUN_PAYMENT</button>\
+                        </div>\
+                        <div id="calc-view-coc" class="space-y-3 hidden">\
+                            <div class="input-wrapper"><input type="number" id="calc-flow" class="hacker-input" placeholder="ANNUAL_CASH_FLOW ($)"></div>\
+                            <div class="input-wrapper"><input type="number" id="calc-invested" class="hacker-input" placeholder="TOTAL_CASH_IN ($)"></div>\
+                            <button onclick="window.runCalc('coc')" class="terminal-btn">RUN_COC_RETURN</button>\
+                        </div>\
+                        <div id="calc-result" class="mt-4 p-3 bg-black/40 text-center text-xl font-bold text-neon-pink border border-dashed border-pink-500/30 min-h-[50px] flex items-center justify-center">READY</div>\
+                    </div>\
+                </section>\
+            </main>\
+            <!-- NOTES -->\
+            <section class="mt-8 max-w-5xl mx-auto px-2">\
+                 <div class="hacker-module" id="module-notes">\
+                    <div class="module-inner">\
+                        <div class="module-header"><span class="text-xs font-bold">NEURAL_LOGS (FIELD_NOTES)</span><div class="status-light"></div></div>\
+                        <div class="flex gap-4">\
+                            <textarea id="note-input" class="hacker-input h-20 flex-1" placeholder="Input raw telemetry..."></textarea>\
+                            <div class="w-32 space-y-2">\
+                                <button id="btn-save-note" class="terminal-btn hex-trigger" data-id="MEM_STORE">STORE</button>\
+                                <button id="btn-ai-debrief" class="terminal-btn hex-trigger" data-id="AI_ANALYZE" style="color: var(--neon-blue); border-color: var(--neon-blue);">DEBRIEF</button>\
+                            </div>\
+                        </div>\
+                        <div id="notes-feed" class="h-24 overflow-y-auto text-xs leading-relaxed mt-4 border-t border-gray-800 pt-2"></div>\
+                    </div>\
+                </div>\
+            </section>\
+            <!-- PROTOCOL -->\
+            <section class="mt-16 mb-32 max-w-5xl mx-auto px-4">\
+                <h2 class="text-2xl font-bold text-cyan-400 mb-8 tracking-widest uppercase border-b border-cyan-400/20 pb-2">Weekly_Protocol_O7</h2>\
+                <div class="hacker-module mb-8" id="module-scheduler">\
+                    <div class="module-inner">\
+                        <div class="module-header"><span class="text-xs font-bold">TACTICAL_SCHEDULER_AI</span><div class="status-light" style="background: var(--neon-pink);"></div></div>\
+                        <div class="flex flex-col gap-4">\
+                            <textarea id="daily-objectives-input" class="hacker-input h-24" placeholder="Input raw mission parameters..."></textarea>\
+                            <button id="btn-gen-protocol" class="terminal-btn hex-trigger" data-id="GEN_TIMELINE">GENERATE_OPTIMIZED_TIMELINE</button>\
+                        </div>\
+                        <div id="ai-protocol-output" class="mt-4 p-4 bg-black/40 border border-dashed border-cyan-400/30 text-xs leading-relaxed hidden text-green-300 font-mono"></div>\
+                        <button id="btn-transfer-protocol" class="terminal-btn hex-trigger hidden mt-4 border-neon-green text-neon-green" data-id="TRANSFER_DATA">TRANSFER_TO_ACTIVE_PROTOCOL</button>\
+                    </div>\
+                </div>\
+                <div id="accordion-container" class="space-y-6"></div>\
+            </section>\
+        </div>\
+\
+        <!-- VIEW: WAR ROOM -->\
+        <div id="view-warroom" class="hidden max-w-[1400px] mx-auto px-4 h-[80vh]">\
+            <div class="flex justify-between items-center mb-6 border-b border-neon-blue/30 pb-4">\
+                <h2 class="text-2xl font-bold text-neon-blue tracking-widest">TACTICAL_WAR_ROOM</h2>\
+                <div class="flex gap-4">\
+                    <div class="input-wrapper w-48"><input type="text" id="deal-input-name" class="hacker-input" placeholder="DEAL_NAME"></div>\
+                    <div class="input-wrapper w-32"><input type="number" id="deal-input-val" class="hacker-input" placeholder="VALUE ($)"></div>\
+                    <button onclick="window.addDeal()" class="terminal-btn w-32 hex-trigger" data-id="INJECT_DEAL">INJECT</button>\
+                </div>\
+            </div>\
+            <div class="kanban-board" id="kanban-board">\
+                <!-- Columns generated by JS -->\
+            </div>\
+        </div>\
+\
+        <!-- VIEW: INTEL UPLINK (PROPERTY DB) -->\
+        <div id="view-intel" class="hidden max-w-[1600px] mx-auto px-4 mb-32 h-[800px]">\
+            <div class="flex h-full gap-6">\
+                <!-- LEFT COL: COMMANDER LIST -->\
+                <div class="w-1/4 h-full flex flex-col">\
+                    <div class="hacker-module h-full flex flex-col">\
+                        <div class="module-inner flex flex-col h-full !p-0">\
+                            <div class="p-4 border-b border-gray-800 bg-black/40">\
+                                <div class="text-xs font-bold text-gray-400 mb-2">TARGET_LIST</div>\
+                                <button onclick="window.initNewProperty()" class="terminal-btn text-[10px] w-full border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black">+ NEW_TARGET_FILE</button>\
+                            </div>\
+                            <div id="property-list" class="flex-1 overflow-y-auto p-2 custom-scrollbar">\
+                                <!-- Injected Items -->\
+                            </div>\
+                        </div>\
+                    </div>\
+                </div>\
+\
+                <!-- RIGHT COL: HOLOGRAPHIC DOSSIER -->\
+                <div class="w-3/4 h-full relative">\
+                    <!-- Placeholder when no property selected -->\
+                    <div id="dossier-placeholder" class="h-full w-full flex items-center justify-center border border-dashed border-gray-800 text-gray-600 font-mono animate-pulse">\
+                        AWAITING_TARGET_SELECTION...\
+                    </div>\
+\
+                    <!-- Active Dossier -->\
+                    <div id="active-dossier" class="dossier-box hidden">\
+                        <div class="module-inner flex flex-col h-full">\
+                            <!-- Header -->\
+                            <div class="flex justify-between items-center border-b border-neon-blue/30 pb-4 mb-4">\
+                                <div>\
+                                    <div class="text-[10px] text-neon-blue tracking-widest mb-1">TARGET_IDENTIFIER</div>\
+                                    <input type="text" id="intel-address" class="bg-transparent border-none text-2xl font-bold text-white w-full focus:outline-none" placeholder="ENTER_ADDRESS...">\
+                                </div>\
+                                <div class="flex gap-2">\
+                                    <button onclick="window.autoScanProperty()" id="btn-fetch-intel" class="terminal-btn w-auto px-4 text-[10px]">AUTO_SCAN (AI)</button>\
+                                    <button onclick="window.savePropertyIntel(this)" class="terminal-btn w-auto px-4 text-[10px] border-neon-green text-neon-green">SAVE_CHANGES</button>\
+                                    <button onclick="window.deletePropertyIntel()" class="terminal-btn w-auto px-4 text-[10px] border-neon-red text-neon-red">PURGE</button>\
+                                </div>\
+                            </div>\
+\
+                            <!-- Tabs -->\
+                            <div class="intel-tabs">\
+                                <div class="intel-tab active" onclick="window.switchIntelTab('data', this)">[A] SPECS_DATA</div>\
+                                <div class="intel-tab" onclick="window.switchIntelTab('logs', this)">[B] COMMS_LOG (LEADS)</div>\
+                                <div class="intel-tab" onclick="window.switchIntelTab('mkt', this)">[C] OPS_VECTOR (MARKETING)</div>\
+                            </div>\
+\
+                            <!-- CONTENT AREA -->\
+                            <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">\
+                                \
+                                <!-- TAB A: SPECS -->\
+                                <div id="intel-tab-data">\
+                                    <div class="grid grid-cols-2 gap-6 mb-6">\
+                                        <div class="space-y-4">\
+                                            <div class="input-wrapper"><label class="text-[10px] text-gray-500 mb-1 block">ZONING_CODE</label><input type="text" id="intel-zoning" class="hacker-input text-neon-blue" placeholder="--"></div>\
+                                            <div class="input-wrapper"><label class="text-[10px] text-gray-500 mb-1 block">GROSS_LEASABLE_AREA</label><input type="text" id="intel-gla" class="hacker-input text-neon-blue" placeholder="--"></div>\
+                                        </div>\
+                                        <div class="space-y-4">\
+                                            <div class="input-wrapper"><label class="text-[10px] text-gray-500 mb-1 block">PARKING_RATIO</label><input type="text" id="intel-parking" class="hacker-input text-neon-blue" placeholder="--"></div>\
+                                            <div class="input-wrapper"><label class="text-[10px] text-gray-500 mb-1 block">YEAR_BUILT</label><input type="text" id="intel-year" class="hacker-input text-neon-blue" placeholder="--"></div>\
+                                        </div>\
+                                    </div>\
+\
+                                    <!-- NEW: DYNAMIC CUSTOM FIELDS -->\
+                                    <div class="mb-6 border-t border-gray-800 pt-4">\
+                                        <div class="flex justify-between items-center mb-2">\
+                                            <label class="text-[10px] text-gray-500 block">CUSTOM_DATA_VECTORS</label>\
+                                            <button onclick="window.addCustomField()" type="button" class="text-[9px] text-neon-blue hover:text-neon-pink font-bold tracking-widest">[+ ADD_FIELD]</button>\
+                                        </div>\
+                                        <div id="intel-custom-fields" class="space-y-2">\
+                                            <!-- Dynamically injected fields go here -->\
+                                        </div>\
+                                    </div>\
+\
+                                    <div class="input-wrapper mb-6">\
+                                        <label class="text-[10px] text-gray-500 mb-1 block">SOURCE_URL</label>\
+                                        <div class="flex gap-2">\
+                                            <input type="text" id="intel-url" class="hacker-input" placeholder="https://...">\
+                                            <button onclick="window.openUrl()" class="terminal-btn w-auto px-4 text-[10px]">OPEN</button>\
+                                        </div>\
+                                    </div>\
+                                    <div class="input-wrapper h-full">\
+                                        <label class="text-[10px] text-gray-500 mb-1 block">STRATEGIC_ANALYSIS / NOTES</label>\
+                                        <textarea id="intel-desc" class="hacker-input h-48 leading-relaxed font-mono resize-none" placeholder="Detailed property analysis..."></textarea>\
+                                    </div>\
+                                </div>\
+\
+                                <!-- TAB B: COMMS (LEADS) -->\
+                                <div id="intel-tab-logs" class="hidden h-full flex flex-col">\
+                                    <div class="flex gap-2 mb-4 bg-black/20 p-4 border border-gray-800">\
+                                        <input type="text" id="log-input" class="hacker-input" placeholder="Log Entry (Caller Name, Offer Details, Note)...">\
+                                        <input type="text" id="log-type" class="hacker-input w-32" list="log-type-list" placeholder="TYPE">\
+                                        <datalist id="log-type-list">\
+                                            <option value="NOTE"></option>\
+                                            <option value="CALLER"></option>\
+                                            <option value="OFFER"></option>\
+                                        </datalist>\
+                                        <button id="btn-add-log" type="button" class="terminal-btn w-24">ADD</button>\
+                                    </div>\
+                                    <div id="intel-logs-feed" class="flex-1 space-y-2"></div>\
+                                </div>\
+\
+                                <!-- TAB C: MARKETING -->\
+                                <div id="intel-tab-mkt" class="hidden h-full">\
+                                    <div class="mb-4 text-xs text-gray-400 font-mono">ACTIVE_MARKETING_VECTORS (MANAGED IN MARKETING_OPS TAB)</div>\
+                                    <div id="intel-mkt-list" class="space-y-2"></div>\
+                                </div>\
+\
+                            </div>\
+                        </div>\
+                    </div>\
+                </div>\
+            </div>\
+        </div>\
+\
+        <!-- VIEW: MARKETING_OPS -->\
+        <div id="view-marketing" class="hidden max-w-7xl mx-auto mb-32">\
+             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">\
+                <!-- Injection Terminal -->\
+                <div class="hacker-module lg:col-span-1">\
+                    <div class="module-inner">\
+                        <div class="module-header"><span class="text-xs font-bold text-neon-pink">VECTOR_INJECTION</span><div class="status-light" style="background: var(--neon-pink);"></div></div>\
+                        <div class="space-y-4">\
+                            <div class="input-wrapper">\
+                                <input type="text" id="mkt-prop" class="hacker-input text-neon-blue" list="mkt-prop-list" placeholder="TARGET_PROPERTY">\
+                                <datalist id="mkt-prop-list"></datalist>\
+                            </div>\
+                            <div class="input-wrapper relative">\
+                                <input type="text" id="mkt-channel-input" class="hacker-input" list="channel-suggestions" placeholder="CHANNEL (SELECT/TYPE)">\
+                                <datalist id="channel-suggestions"><option value="INSTAGRAM_REEL"><option value="EMAIL_BLAST"><option value="LINKEDIN_POST"><option value="YOUTUBE_TOUR"><option value="LOOPNET_BOOST"><option value="DIRECT_MAILER"></datalist>\
+                            </div>\
+                            <div class="input-wrapper"><input type="date" id="mkt-date" class="hacker-input" style="color-scheme: dark;"></div>\
+                            <button id="btn-mkt-add" class="terminal-btn hex-trigger" data-id="DEPLOY_ASSET">DEPLOY_ASSET</button>\
+                        </div>\
+                    </div>\
+                </div>\
+                <!-- Controls -->\
+                <div class="hacker-module lg:col-span-3">\
+                    <div class="module-inner flex flex-col justify-between">\
+                        <div class="module-header"><span class="text-xs font-bold text-neon-blue">TACTICAL_CALENDAR_OPS</span><div class="status-light" style="background: var(--neon-blue);"></div></div>\
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">\
+                            <div class="flex gap-2">\
+                                <button onclick="window.changeMarketingView('month')" id="btn-view-month" class="terminal-btn !w-auto px-4 py-2 text-[10px] bg-neon-blue/20">TACTICAL (MONTH)</button>\
+                                <button onclick="window.changeMarketingView('year')" id="btn-view-year" class="terminal-btn !w-auto px-4 py-2 text-[10px]">STRATEGIC (YEAR)</button>\
+                            </div>\
+                            <div class="flex items-center gap-2 w-full md:w-auto">\
+                                <span class="text-[10px] opacity-70">TARGET_FILTER:</span>\
+                                <input type="text" id="mkt-filter-prop" class="hacker-input !w-40 !py-1 !text-xs" list="mkt-filter-prop-list" placeholder="ALL" onchange="window.updateMarketingFilter()" onkeyup="window.updateMarketingFilter()">\
+                                <datalist id="mkt-filter-prop-list"></datalist>\
+                            </div>\
+                            <div class="flex gap-2 items-center" id="month-nav-controls">\
+                                <button onclick="window.changeMarketingMonth(-1)" class="terminal-btn !w-auto px-2 py-1"><</button>\
+                                <span id="mkt-current-month" class="font-bold text-xl min-w-[150px] text-center text-neon-yellow">JANUARY 2026</span>\
+                                <button onclick="window.changeMarketingMonth(1)" class="terminal-btn !w-auto px-2 py-1">></button>\
+                            </div>\
+                        </div>\
+                        <div class="w-full bg-black border border-gray-800 h-6 relative mb-2">\
+                            <div id="mkt-progress-bar" class="h-full bg-neon-green opacity-50 transition-all duration-500" style="width: 0%"></div>\
+                            <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-[10px] font-bold tracking-widest text-white shadow-black drop-shadow-md">\
+                                EXECUTION_STATUS: <span id="mkt-progress-text" class="ml-2">0%</span>\
+                            </div>\
+                        </div>\
+                        <div id="mkt-stats" class="grid grid-cols-4 gap-2 text-xs opacity-70">\
+                            <div class="bg-black/40 p-2 border border-gray-800">TOTAL_OPS: <span id="stat-vectors" class="text-white">0</span></div>\
+                            <div class="bg-black/40 p-2 border border-gray-800">PENDING: <span id="stat-pending" class="text-yellow-400">0</span></div>\
+                            <div class="bg-black/40 p-2 border border-gray-800">EXECUTED: <span id="stat-executed" class="text-green-400">0</span></div>\
+                        </div>\
+                        <div id="mkt-property-dossier" class="hidden mt-4 border-t border-gray-800 pt-2">\
+                            <div class="text-xs font-bold text-neon-blue mb-2">TARGET_HISTORY_LOG: <span id="dossier-target-name"></span></div>\
+                            <div id="dossier-list" class="max-h-40 overflow-y-auto space-y-1 pr-2"></div>\
+                        </div>\
+                    </div>\
+                </div>\
+            </div>\
+            <div id="marketing-month-view" class="hacker-module">\
+                <div class="module-inner !p-0">\
+                    <div class="cal-grid">\
+                        <div class="cal-header-cell">SUN</div><div class="cal-header-cell">MON</div><div class="cal-header-cell">TUE</div><div class="cal-header-cell">WED</div><div class="cal-header-cell">THU</div><div class="cal-header-cell">FRI</div><div class="cal-header-cell">SAT</div>\
+                        <div id="cal-days-container" class="col-span-7 grid grid-cols-7 gap-px"></div>\
+                    </div>\
+                </div>\
+            </div>\
+            <div id="marketing-year-view" class="hidden">\
+                 <div class="year-grid" id="year-grid-container"></div>\
+            </div>\
+        </div>\
+\
+        <!-- VIEW: CRM (Hidden by default) -->\
+        <div id="view-crm" class="hidden max-w-7xl mx-auto">\
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">\
+                <!-- NEW CONTACT FORM -->\
+                <section class="hacker-module lg:col-span-1">\
+                    <div class="module-inner">\
+                        <div class="module-header"><span class="text-xs font-bold text-neon-pink">NEW_TARGET_INTEL</span><div class="status-light" style="background: var(--neon-pink);"></div></div>\
+                        <div class="space-y-4">\
+                            <div class="input-wrapper"><input type="text" id="crm-name" class="hacker-input" placeholder="TARGET_NAME"></div>\
+                            <div class="input-wrapper">\
+                                <input type="text" id="crm-role" class="hacker-input" list="crm-role-list" placeholder="TARGET_ROLE (e.g. INVESTOR)">\
+                                <datalist id="crm-role-list">\
+                                    <option value="INVESTOR"></option>\
+                                    <option value="TENANT"></option>\
+                                    <option value="OWNER"></option>\
+                                    <option value="BROKER"></option>\
+                                </datalist>\
+                            </div>\
+                            <div class="input-wrapper">\
+                                <input type="text" id="crm-status" class="hacker-input text-neon-yellow" list="crm-status-list" placeholder="STATUS (e.g. COLD_LEAD)">\
+                                <datalist id="crm-status-list">\
+                                    <option value="COLD_LEAD"></option>\
+                                    <option value="WARM_LEAD"></option>\
+                                    <option value="HOT_PROSPECT"></option>\
+                                </datalist>\
+                            </div>\
+                            <div class="input-wrapper"><input type="text" id="crm-reqs" class="hacker-input" placeholder="REQUIREMENTS"></div>\
+                            <div class="input-wrapper"><input type="text" id="crm-timeline" class="hacker-input" placeholder="TIMELINE"></div>\
+                            <div class="input-wrapper"><textarea id="crm-notes" class="hacker-input h-24" placeholder="TACTICAL_NOTES..."></textarea></div>\
+                            <button id="btn-crm-add" class="terminal-btn hex-trigger" data-id="ENCRYPT_DATA">ENCRYPT_CONTACT</button>\
+                        </div>\
+                    </div>\
+                </section>\
+                <!-- CONTACT LIST -->\
+                <section class="hacker-module lg:col-span-2">\
+                    <div class="module-inner">\
+                        <div class="module-header"><span class="text-xs font-bold text-neon-blue">TARGET_DATABASE</span><div class="status-light" style="background: var(--neon-blue);"></div></div>\
+                        <div id="crm-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar"></div>\
+                    </div>\
+                </section>\
+            </div>\
+        </div>\
+\
+        <!-- NEW: FLOATING TASKS HUD -->\
+        <div id="floating-task-widget" class="fixed top-8 left-8 z-[20000]">\
+            <button id="btn-float-tasks" class="w-16 h-16 rounded-full bg-black border-2 border-neon-pink text-neon-pink flex items-center justify-center shadow-[0_0_20px_rgba(255,0,255,0.4)] hover:scale-110 hover:shadow-[0_0_30px_var(--neon-pink)] transition-all relative">\
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>\
+                <div id="floating-task-badge" class="absolute -top-2 -right-2 w-6 h-6 bg-neon-red text-black font-bold rounded-full flex items-center justify-center text-xs" style="display: none;">0</div>\
+            </button>\
+            <div id="floating-task-panel" class="hidden absolute top-20 left-0 w-[350px] md:w-[400px] hacker-module">\
+                <div class="module-inner !p-4 !bg-black/95">\
+                    <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">\
+                        <span class="text-xs font-bold text-neon-pink tracking-widest">ACTIVE_DIRECTIVES</span>\
+                        <div class="status-light" style="background: var(--neon-pink);"></div>\
+                    </div>\
+                    <div id="floating-task-list" class="max-h-[400px] overflow-y-auto space-y-1 pr-2 custom-scrollbar"></div>\
+                </div>\
+            </div>\
+        </div>\
+\
+        <footer class="fixed bottom-0 left-0 w-full bg-black border-t border-cyan-500/30 z-[1000]">\
+            <div id="neural-load-bar"></div>\
+            <div class="p-3 flex justify-between items-center">\
+                <div id="terminal-feed" class="text-xs h-6 overflow-hidden font-mono uppercase opacity-80 tracking-widest"></div>\
+                <div class="text-[10px] opacity-40">CHASSIS_LOAD: <span id="load-pct">0%</span></div>\
+            </div>\
+        </footer>\
+    </div>\
+\
+    <script type="module">\
+        import \{ initializeApp \} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";\
+        import \{ getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged \} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";\
+        import \{ getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, getDoc, updateDoc, deleteDoc \} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";\
+\
+        const firebaseConfig = JSON.parse(__firebase_config);\
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'operative-2026';\
+        const apiKey = ""; \
+        const app = initializeApp(firebaseConfig);\
+        const auth = getAuth(app);\
+        const db = getFirestore(app);\
+        \
+        let user = null;\
+        let transactions = [];\
+        let notes = [];\
+        let dailyTasks = [];\
+        let contacts = [];\
+        let marketingEvents = [];\
+        let activeDeals = [];\
+        let propertyFolders = []; \
+        let propertyLogs = []; \
+        let kpi = \{ dials: 0, contacts: 0, appts: 0 \};\
+        let currentLoad = 0;\
+        let userProfile = \{ xp: 0, rank: 'INITIATE' \};\
+        \
+        let currentMktDate = new Date();\
+        let selectedPropertyFilter = 'ALL';\
+        let currentIntelId = null; \
+        \
+        const GOAL_GCI = 100000;\
+        const GOAL_INVEST = 25000;\
+        let protocolContent = [\
+            \{ day: 0, label: "SUN [CALIBRATION]", schedule: [\{ time: "9:00 AM", cat: "MIND", text: "Visualize $100k GCI." \}] \},\
+            \{ day: 1, label: "MON [ASSAULT_INIT]", schedule: [\{ time: "9:00 AM", cat: "HUNT", text: "POWER BLOCK: 50 Cold Calls." \}] \},\
+            \{ day: 2, label: "TUE [TACTICAL_ADVANCE]", schedule: [\{ time: "8:00 AM", cat: "EDU", text: "TACS 3 Module Training." \}] \},\
+            \{ day: 3, label: "WED [VISIBILITY_OPS]", schedule: [\{ time: "8:00 AM", cat: "MEDIA", text: "Film A-Roll content." \}] \},\
+            \{ day: 4, label: "THU [NETWORK_EXPANSION]", schedule: [\{ time: "10:00 AM", cat: "HUNT", text: "Call Block: Past clients." \}] \},\
+            \{ day: 5, label: "FRI [DEBRIEF_&_CLOSE]", schedule: [\{ time: "9:00 AM", cat: "KPI", text: "Weekly Audit." \}] \},\
+            \{ day: 6, label: "SAT [STRATEGIC_RECON]", schedule: [\{ time: "9:00 AM", cat: "FIELD", text: "Drive-time recon." \}] \}\
+        ];\
+\
+        const sleep = ms => new Promise(r => setTimeout(r, ms));\
+        const safeAddClick = (id, handler) => \{ const el = document.getElementById(id); if (el) el.onclick = handler; \};\
+\
+        // --- WAR ROOM ---\
+        let DEAL_STAGES = ['TARGET_ACQUIRED', 'RECON', 'ENGAGEMENT', 'INFILTRATION', 'MISSION_COMPLETE'];\
+        \
+        let currentEditStageIndex = -1;\
+        window.openStageEditor = (index) => \{\
+            currentEditStageIndex = index;\
+            document.getElementById('edit-stage-input').value = DEAL_STAGES[index].replace(/_/g, ' ');\
+            document.getElementById('stage-editor-modal').classList.remove('hidden');\
+            document.getElementById('stage-editor-modal').classList.add('flex');\
+        \};\
+        \
+        window.closeStageEditor = () => \{\
+            document.getElementById('stage-editor-modal').classList.add('hidden');\
+            document.getElementById('stage-editor-modal').classList.remove('flex');\
+            currentEditStageIndex = -1;\
+        \};\
+\
+        safeAddClick('btn-stage-cancel', window.closeStageEditor);\
+        safeAddClick('btn-stage-save', async () => \{\
+            if (currentEditStageIndex === -1 || !user) return;\
+            let newName = document.getElementById('edit-stage-input').value.trim().toUpperCase().replace(/\\s+/g, '_');\
+            if (!newName) return;\
+\
+            const oldName = DEAL_STAGES[currentEditStageIndex];\
+            if (oldName === newName) \{ window.closeStageEditor(); return; \}\
+\
+            document.getElementById('btn-stage-save').innerText = 'UPDATING...';\
+            DEAL_STAGES[currentEditStageIndex] = newName;\
+            \
+            try \{\
+                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'warroom'), \{ stages: DEAL_STAGES \}, \{ merge: true \});\
+                const dealsToUpdate = activeDeals.filter(d => d.stage === oldName);\
+                for (let deal of dealsToUpdate) \{\
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'active_deals', deal.id), \{ stage: newName \});\
+                \}\
+                log(`COLUMN_RENAMED: $\{newName\}`, 'var(--neon-green)');\
+                window.closeStageEditor();\
+                renderWarRoom();\
+            \} catch(e) \{\
+                log('UPDATE_FAILED', 'red');\
+            \} finally \{\
+                document.getElementById('btn-stage-save').innerText = 'COMMIT';\
+            \}\
+        \});\
+\
+        window.addDeal = async () => \{ if (!user) return; const name = document.getElementById('deal-input-name').value; const val = parseInt(document.getElementById('deal-input-val').value); if (!name || isNaN(val)) return; try \{ await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'active_deals'), \{ name, value: val, stage: DEAL_STAGES[0], timestamp: Date.now() \}); document.getElementById('deal-input-name').value = ''; document.getElementById('deal-input-val').value = ''; log(`TARGET_LOCKED: $\{name\}`, 'var(--neon-green)'); window.addXP(25); \} catch(e) \{ log('INJECTION_FAIL', 'red'); \} \};\
+        window.moveDeal = async (id, currentStage, dir) => \{ if (!user) return; const currIdx = DEAL_STAGES.indexOf(currentStage); if(currIdx === -1) return; const newIdx = currIdx + dir; if (newIdx < 0 || newIdx >= DEAL_STAGES.length) return; const newStage = DEAL_STAGES[newIdx]; try \{ await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'active_deals', id), \{ stage: newStage \}); playSFX('clunk'); if (newStage === DEAL_STAGES[DEAL_STAGES.length - 1]) \{ window.addXP(500); log(`MISSION_COMPLETE: TARGET_SECURED`, 'var(--neon-green)'); \} \} catch(e) \{\} \};\
+        window.deleteDeal = async (id) => \{ if (!user) return; window.showConfirm("ABORT MISSION?", async () => \{ try \{ await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'active_deals', id)); \} catch(e) \{\} \}); \};\
+        const renderWarRoom = () => \{ const board = document.getElementById('kanban-board'); if(!board) return; board.innerHTML = DEAL_STAGES.map((stage, index) => \{ const dealsInStage = activeDeals.filter(d => d.stage === stage); const totalVal = dealsInStage.reduce((acc, d) => acc + (d.value||0), 0); const cardsHtml = dealsInStage.map(d => ` <div class="kanban-card"> <div class="card-title">$\{d.name\}</div> <div class="card-val">$$\{d.value.toLocaleString()\}</div> <div class="card-controls"> $\{stage !== DEAL_STAGES[0] ? `<span class="card-btn" onclick="window.moveDeal('$\{d.id\}', '$\{stage\}', -1)">< PREV</span>` : '<span></span>'\} <span class="card-btn text-red-500" onclick="window.deleteDeal('$\{d.id\}')">X</span> $\{stage !== DEAL_STAGES[DEAL_STAGES.length - 1] ? `<span class="card-btn" onclick="window.moveDeal('$\{d.id\}', '$\{stage\}', 1)">NEXT ></span>` : '<span></span>'\} </div> </div> `).join(''); return ` <div class="kanban-col"> <div class="kanban-col-header group flex justify-between items-center"> <span>$\{stage.replace(/_/g, ' ')\} <span class="text-xs text-gray-500 font-normal">($$\{(totalVal/1000).toFixed(0)\}k)</span></span> <span class="cursor-pointer opacity-0 group-hover:opacity-100 text-neon-blue hover:text-neon-pink text-[10px]" onclick="window.openStageEditor($\{index\})">[\uc0\u9881 ]</span> </div> <div class="flex-1 overflow-y-auto custom-scrollbar">$\{cardsHtml\}</div> </div> `; \}).join(''); \};\
+\
+        // --- INTEL UPLINK (PROPERTY DB) ---\
+        window.switchIntelTab = (tab, btn) => \{\
+            document.querySelectorAll('.intel-tab').forEach(t => t.classList.remove('active'));\
+            btn.classList.add('active');\
+            ['data', 'logs', 'mkt'].forEach(t => document.getElementById(`intel-tab-$\{t\}`).classList.add('hidden'));\
+            document.getElementById(`intel-tab-$\{tab\}`).classList.remove('hidden');\
+            playSFX('clunk');\
+            if(tab === 'mkt') renderPropertyMarketing();\
+            if(tab === 'logs') renderPropertyLogs();\
+        \};\
+\
+        // NEW: Add dynamic custom field row\
+        window.addCustomField = (key = '', val = '') => \{\
+            const container = document.getElementById('intel-custom-fields');\
+            const id = 'cf_' + Date.now() + Math.floor(Math.random() * 1000);\
+            const html = `\
+                <div class="flex gap-2 items-center custom-field-row" id="$\{id\}">\
+                    <input type="text" class="hacker-input w-1/3 cf-key" placeholder="LABEL (e.g. CAP_RATE)" value="$\{key\}">\
+                    <input type="text" class="hacker-input w-2/3 cf-val text-neon-blue" placeholder="DATA_VALUE" value="$\{val\}">\
+                    <button onclick="document.getElementById('$\{id\}').remove()" class="text-[12px] text-neon-red hover:text-white px-2 py-1 font-bold">X</button>\
+                </div>\
+            `;\
+            container.insertAdjacentHTML('beforeend', html);\
+            playSFX('clunk');\
+        \};\
+\
+        window.savePropertyIntel = async (btn) => \{\
+            if (!user) return;\
+            const addr = document.getElementById('intel-address').value;\
+            const url = document.getElementById('intel-url').value; \
+            if(!addr) \{ log("ERR: NO_ADDRESS", "red"); return; \}\
+            \
+            // Gather Custom Fields\
+            const customRows = document.querySelectorAll('.custom-field-row');\
+            const customFieldsArr = [];\
+            customRows.forEach(row => \{\
+                const k = row.querySelector('.cf-key').value.trim().toUpperCase().replace(/\\s+/g, '_');\
+                const v = row.querySelector('.cf-val').value.trim();\
+                if (k || v) customFieldsArr.push(\{ key: k, val: v \});\
+            \});\
+\
+            const data = \{\
+                address: addr,\
+                url: url,\
+                zoning: document.getElementById('intel-zoning').value,\
+                gla: document.getElementById('intel-gla').value,\
+                parking: document.getElementById('intel-parking').value,\
+                year: document.getElementById('intel-year').value,\
+                desc: document.getElementById('intel-desc').value,\
+                customFields: customFieldsArr, // Add dynamic fields to database\
+                timestamp: Date.now()\
+            \};\
+\
+            try \{\
+                if (btn) btn.innerText = "SAVING...";\
+                if (currentIntelId) \{\
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'property_intel', currentIntelId), data);\
+                    log(`INTEL_UPDATED: $\{addr\}`, 'var(--neon-green)');\
+                \} else \{\
+                    const ref = await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'property_intel'), data);\
+                    currentIntelId = ref.id;\
+                    log(`FOLDER_ENCRYPTED: $\{addr\}`, 'var(--neon-green)');\
+                    window.addXP(30);\
+                \}\
+                // Refresh left list state\
+                renderPropertyFolders();\
+                // Ensure dossier is showing\
+                document.getElementById('dossier-placeholder').classList.add('hidden');\
+                document.getElementById('active-dossier').classList.remove('hidden');\
+            \} catch(e) \{ \
+                console.error(e);\
+                log("SAVE_FAIL", "red"); \
+            \} finally \{\
+                if (btn) btn.innerText = "SAVE_CHANGES";\
+            \}\
+        \};\
+        \
+        window.initNewProperty = () => \{\
+            currentIntelId = null;\
+            // Clear inputs\
+            ['intel-address','intel-url','intel-zoning','intel-gla','intel-parking','intel-year','intel-desc'].forEach(id => \{\
+                const el = document.getElementById(id);\
+                if (el) el.value = '';\
+            \});\
+            // Clear lists & dynamic fields\
+            const logsFeed = document.getElementById('intel-logs-feed');\
+            if (logsFeed) logsFeed.innerHTML = '';\
+            \
+            const mktList = document.getElementById('intel-mkt-list');\
+            if (mktList) mktList.innerHTML = '';\
+\
+            const customList = document.getElementById('intel-custom-fields');\
+            if (customList) customList.innerHTML = '';\
+            \
+            // Show Dossier ready for input\
+            const placeholder = document.getElementById('dossier-placeholder');\
+            if (placeholder) placeholder.classList.add('hidden');\
+            \
+            const activeDossier = document.getElementById('active-dossier');\
+            if (activeDossier) activeDossier.classList.remove('hidden');\
+            \
+            // Reset Tab\
+            const firstTab = document.querySelector('.intel-tab');\
+            if (firstTab) window.switchIntelTab('data', firstTab);\
+            \
+            // UI State\
+            document.querySelectorAll('.folder-item').forEach(f => f.classList.remove('active'));\
+            playSFX('clunk');\
+            log("TERMINAL_RESET: READY_FOR_NEW_TARGET", "var(--neon-blue)");\
+        \};\
+        \
+        window.openUrl = () => \{\
+            const url = document.getElementById('intel-url').value;\
+            if(url) window.open(url, '_blank');\
+        \};\
+\
+        window.loadPropertyIntel = (id) => \{\
+            const folder = propertyFolders.find(f => f.id === id);\
+            if (!folder) return;\
+            currentIntelId = id;\
+            document.getElementById('intel-address').value = folder.address || '';\
+            document.getElementById('intel-url').value = folder.url || '';\
+            document.getElementById('intel-zoning').value = folder.zoning || '';\
+            document.getElementById('intel-gla').value = folder.gla || '';\
+            document.getElementById('intel-parking').value = folder.parking || '';\
+            document.getElementById('intel-year').value = folder.year || '';\
+            document.getElementById('intel-desc').value = folder.desc || '';\
+            \
+            // Load custom dynamic fields\
+            const customList = document.getElementById('intel-custom-fields');\
+            if (customList) customList.innerHTML = '';\
+            if (folder.customFields && folder.customFields.length > 0) \{\
+                folder.customFields.forEach(cf => window.addCustomField(cf.key, cf.val));\
+            \}\
+            \
+            // UI Updates\
+            document.getElementById('dossier-placeholder').classList.add('hidden');\
+            document.getElementById('active-dossier').classList.remove('hidden');\
+            document.querySelectorAll('.folder-item').forEach(f => f.classList.remove('active'));\
+            const activeItem = document.getElementById(`folder-$\{id\}`);\
+            if(activeItem) activeItem.classList.add('active');\
+\
+            // Switch to Data tab by default\
+            window.switchIntelTab('data', document.querySelector('.intel-tab'));\
+            playSFX('clunk');\
+        \};\
+            \
+        safeAddClick('btn-add-log', async () => \{\
+            const btn = document.getElementById('btn-add-log');\
+            if (!user) return;\
+            if (!currentIntelId) \{ \
+                log("ERR: SELECT_PROPERTY_FIRST", "red"); \
+                if (btn) \{\
+                    const oldText = btn.innerText;\
+                    btn.innerText = "NO_TARGET";\
+                    btn.style.borderColor = "var(--neon-red)";\
+                    btn.style.color = "var(--neon-red)";\
+                    setTimeout(() => \{ btn.innerText = oldText; btn.style.borderColor = ""; btn.style.color = ""; \}, 2000);\
+                \}\
+                return; \
+            \}\
+            const text = document.getElementById('log-input').value;\
+            let type = document.getElementById('log-type').value.toUpperCase().replace(/\\s+/g, '_');\
+            if(!type) type = 'NOTE';\
+            if(!text || !text.trim()) \{\
+                log("ERR: EMPTY_LOG", "red");\
+                return; \
+            \}\
+            \
+            try \{\
+                if(btn) btn.innerText = "SAVING...";\
+                await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'property_logs'), \{\
+                    propertyId: currentIntelId,\
+                    text: text.trim(),\
+                    type: type,\
+                    timestamp: Date.now()\
+                \});\
+                document.getElementById('log-input').value = '';\
+                document.getElementById('log-type').value = '';\
+                log("ENTRY_ADDED_TO_LOG", "var(--neon-green)");\
+                window.addXP(10);\
+            \} catch(e) \{ \
+                console.error(e);\
+                log("ERR: SAVE_FAILED", "red");\
+            \} finally \{\
+                if(btn) btn.innerText = "ADD";\
+            \}\
+        \});\
+\
+        const renderPropertyLogs = () => \{\
+            const container = document.getElementById('intel-logs-feed');\
+            if (!currentIntelId) return;\
+            \
+            const logs = propertyLogs.filter(l => l.propertyId === currentIntelId).sort((a,b) => b.timestamp - a.timestamp);\
+            \
+            if (logs.length === 0) \{ container.innerHTML = '<div class="p-4 text-xs opacity-50 text-center">LOG_EMPTY</div>'; return; \}\
+\
+            container.innerHTML = logs.map(l => \{\
+                let color = 'text-gray-300';\
+                if(l.type === 'CALLER') color = 'text-neon-blue';\
+                if(l.type === 'OFFER') color = 'text-neon-yellow font-bold';\
+                return `\
+                <div class="bg-black/30 p-2 border-l-2 border-gray-700 flex flex-col">\
+                    <div class="flex justify-between text-[9px] opacity-60 mb-1">\
+                        <span>$\{new Date(l.timestamp).toLocaleString()\}</span>\
+                        <span class="$\{color\}">$\{l.type\}</span>\
+                    </div>\
+                    <div class="text-xs $\{color\}">$\{l.text\}</div>\
+                </div>`;\
+            \}).join('');\
+        \};\
+\
+        const renderPropertyMarketing = () => \{\
+            const container = document.getElementById('intel-mkt-list');\
+             if (!currentIntelId) return;\
+             \
+             const currentProp = propertyFolders.find(f => f.id === currentIntelId);\
+             if(!currentProp) return;\
+             const propName = currentProp.address;\
+\
+             const events = marketingEvents.filter(e => e.property === propName).sort((a,b) => new Date(a.date) - new Date(b.date));\
+\
+             if (events.length === 0) \{ container.innerHTML = '<div class="p-4 text-xs opacity-50 text-center">NO_VECTORS_DEPLOYED</div>'; return; \}\
+\
+             container.innerHTML = events.map(e => `\
+                <div class="flex justify-between items-center bg-black/40 p-2 border-b border-dashed border-gray-800">\
+                    <div class="flex flex-col">\
+                        <span class="text-xs font-bold text-white">$\{e.channel\}</span>\
+                        <span class="text-[10px] text-gray-500">$\{e.date\}</span>\
+                    </div>\
+                    <span class="text-[10px] $\{e.status === 'EXECUTED' ? 'text-neon-green' : 'text-yellow-500'\}">$\{e.status\}</span>\
+                </div>\
+             `).join('');\
+        \};\
+\
+        window.deletePropertyIntel = async () => \{\
+            if (!user || !currentIntelId) return;\
+            window.showConfirm("PURGE PROPERTY FILE?", async () => \{\
+                try \{\
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'property_intel', currentIntelId));\
+                    currentIntelId = null;\
+                    document.getElementById('dossier-placeholder').classList.remove('hidden');\
+                    document.getElementById('active-dossier').classList.add('hidden');\
+                    log("FILE_PURGED", "var(--neon-red)");\
+                \} catch(e) \{\}\
+            \});\
+        \};\
+\
+        window.autoScanProperty = async () => \{\
+            const addr = document.getElementById('intel-address').value;\
+            const url = document.getElementById('intel-url').value; \
+            if(!addr) return;\
+            \
+            triggerActionFeedback('view-intel');\
+            const btn = document.getElementById('btn-fetch-intel');\
+            btn.disabled = true;\
+            btn.innerText = "SCANNING...";\
+            \
+            let prompt = `Act as a commercial real estate analyst. Scan for data on: "$\{addr\}".`;\
+            if (url) prompt += ` Prioritize data found at this specific URL: "$\{url\}".`;\
+            prompt += ` Return a JSON object with keys: zoning, gla, parking, year_built, analysis. IMPORTANT: If specific data is not found, you MUST estimate based on visual appearance or typical properties in that zip code. Do not return nulls.`;\
+\
+            try \{\
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=$\{apiKey\}`, \{\
+                    method: 'POST',\
+                    headers: \{ 'Content-Type': 'application/json' \},\
+                    body: JSON.stringify(\{\
+                        contents: [\{ parts: [\{ text: prompt \}] \}],\
+                        tools: [\{ "google_search": \{\} \}],\
+                        generationConfig: \{ responseMimeType: "application/json" \}\
+                    \})\
+                \});\
+                const data = await response.json();\
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;\
+                const cleanJson = text.replace(/```json|```/g, '').trim(); \
+                const res = JSON.parse(cleanJson);\
+                \
+                if(res) \{\
+                    if(res.zoning) document.getElementById('intel-zoning').value = res.zoning;\
+                    if(res.gla) document.getElementById('intel-gla').value = res.gla;\
+                    if(res.parking) document.getElementById('intel-parking').value = res.parking;\
+                    if(res.year_built) document.getElementById('intel-year').value = res.year_built;\
+                    if(res.analysis) document.getElementById('intel-desc').value = res.analysis;\
+                    log("SCAN_COMPLETE", "var(--neon-green)");\
+                \}\
+            \} catch(e) \{ log("SCAN_FAILED", "red"); \}\
+            finally \{ btn.disabled = false; btn.innerText = "AUTO_SCAN (AI)"; \}\
+        \};\
+\
+        const renderPropertyFolders = () => \{\
+            const list = document.getElementById('property-list');\
+            if(!list) return;\
+            \
+            if(propertyFolders.length === 0) \{\
+                list.innerHTML = `<div class="text-[10px] opacity-40 italic p-2">ARCHIVES EMPTY</div>`;\
+                return;\
+            \}\
+\
+            list.innerHTML = propertyFolders.sort((a,b) => b.timestamp - a.timestamp).map(f => `\
+                <div id="folder-$\{f.id\}" class="folder-item $\{currentIntelId === f.id ? 'active' : ''\}" onclick="window.loadPropertyIntel('$\{f.id\}')">\
+                    <span class="folder-icon">\uc0\u55357 \u56513 </span>\
+                    <div class="flex flex-col overflow-hidden w-full">\
+                        <span class="folder-name truncate">$\{f.address\}</span>\
+                        <div class="flex justify-between items-center w-full">\
+                            <span class="text-[9px] text-gray-500">$\{new Date(f.timestamp).toLocaleDateString()\}</span>\
+                            $\{f.url ? '<span class="text-[8px] text-neon-blue">[LINK]</span>' : ''\}\
+                        </div>\
+                    </div>\
+                </div>\
+            `).join('');\
+        \};\
+\
+        // --- CONFIRMATION & HELPERS ---\
+        let pendingConfirmAction = null;\
+        window.showConfirm = (msg, action) => \{ const m = document.getElementById('confirmation-modal'); const t = document.getElementById('confirm-msg'); if(!m || !t) return; t.innerText = msg; pendingConfirmAction = action; m.classList.remove('hidden'); m.classList.add('flex'); playSFX('clunk'); \};\
+        window.closeConfirm = () => \{ const m = document.getElementById('confirmation-modal'); if(!m) return; m.classList.add('hidden'); m.classList.remove('flex'); pendingConfirmAction = null; \};\
+        safeAddClick('btn-confirm-yes', () => \{ if(pendingConfirmAction) pendingConfirmAction(); window.closeConfirm(); \});\
+        safeAddClick('btn-confirm-no', window.closeConfirm);\
+\
+        window.switchCalc = (type, tab) => \{ document.querySelectorAll('.calc-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); ['cap', 'mtg', 'coc'].forEach(t => document.getElementById(`calc-view-$\{t\}`).classList.add('hidden')); document.getElementById(`calc-view-$\{type\}`).classList.remove('hidden'); document.getElementById('calc-result').innerText = 'READY'; \};\
+        window.runCalc = (type) => \{ const resEl = document.getElementById('calc-result'); try \{ if (type === 'cap') \{ const p = parseFloat(document.getElementById('calc-price').value); const n = parseFloat(document.getElementById('calc-noi').value); if (p && n) resEl.innerText = ((n/p)*100).toFixed(2)+'%'; else throw 0; \} else if (type === 'mtg') \{ const p = parseFloat(document.getElementById('calc-loan').value); const r = parseFloat(document.getElementById('calc-rate').value)/1200; const n = parseFloat(document.getElementById('calc-term').value)*12; if(p&&r&&n) resEl.innerText = '$'+((p*r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1)).toFixed(2); else throw 0; \} else if (type === 'coc') \{ const f = parseFloat(document.getElementById('calc-flow').value); const i = parseFloat(document.getElementById('calc-invested').value); if(f&&i) resEl.innerText = ((f/i)*100).toFixed(2)+'%'; else throw 0; \} triggerActionFeedback('module-math'); \} catch(e) \{ resEl.innerText = "ERR"; \} \};\
+\
+        window.changeMarketingView = (mode) => \{ const mMonth = document.getElementById('marketing-month-view'); const mYear = document.getElementById('marketing-year-view'); const bMonth = document.getElementById('btn-view-month'); const bYear = document.getElementById('btn-view-year'); const nav = document.getElementById('month-nav-controls'); if (mode === 'month') \{ mMonth.classList.remove('hidden'); mYear.classList.add('hidden'); bMonth.classList.add('bg-neon-blue/20'); bYear.classList.remove('bg-neon-blue/20'); nav.classList.remove('invisible'); renderMarketingMonth(); \} else \{ mMonth.classList.add('hidden'); mYear.classList.remove('hidden'); bMonth.classList.remove('bg-neon-blue/20'); bYear.classList.add('bg-neon-blue/20'); nav.classList.add('invisible'); renderMarketingYear(); \} playSFX('clunk'); \};\
+        window.changeMarketingMonth = (delta) => \{ currentMktDate.setMonth(currentMktDate.getMonth() + delta); renderMarketingMonth(); \};\
+        \
+        // --- NEW DROPDOWN POPULATOR ---\
+        const populateMarketingDropdown = () => \{\
+            const list = document.getElementById('mkt-prop-list');\
+            if (!list) return;\
+            \
+            // Sort alphabetically\
+            const props = propertyFolders.map(f => f.address).sort();\
+            \
+            let html = ``;\
+            props.forEach(p => \{\
+                html += `<option value="$\{p\}">`;\
+            \});\
+            list.innerHTML = html;\
+        \};\
+\
+        const populatePropertyFilter = () => \{ \
+            const list = document.getElementById('mkt-filter-prop-list'); \
+            if(!list) return; \
+            const props = [...new Set(marketingEvents.map(e => e.property))].sort(); \
+            let html = `<option value="ALL">ALL_TARGETS</option>`; \
+            props.forEach(p => \{ html += `<option value="$\{p\}">`; \}); \
+            list.innerHTML = html; \
+        \};\
+        \
+        window.updateMarketingFilter = () => \{ \
+            let val = document.getElementById('mkt-filter-prop').value;\
+            if(!val || val.trim() === '' || val.toUpperCase() === 'ALL') val = 'ALL';\
+            selectedPropertyFilter = val; \
+            renderMarketingMonth(); \
+            renderMarketingYear(); \
+            renderPropertyDossier(); \
+        \};\
+        const renderPropertyDossier = () => \{ const dossier = document.getElementById('mkt-property-dossier'); const stats = document.getElementById('mkt-stats'); const list = document.getElementById('dossier-list'); const title = document.getElementById('dossier-target-name'); if (selectedPropertyFilter === 'ALL') \{ dossier.classList.add('hidden'); stats.classList.remove('hidden'); return; \} dossier.classList.remove('hidden'); stats.classList.add('hidden'); title.innerText = selectedPropertyFilter; const events = marketingEvents.filter(e => e.property === selectedPropertyFilter).sort((a,b) => new Date(b.date) - new Date(a.date)); if (events.length === 0) \{ list.innerHTML = '<div class="text-[10px] opacity-40 italic">NO_INTEL_FOUND</div>'; return; \} list.innerHTML = events.map(e => ` <div class="flex justify-between items-center text-[11px] bg-black/30 p-1 border-b border-gray-800 border-dashed"> <span class="font-mono opacity-70">$\{e.date\}</span> <span class="font-bold text-white flex-1 mx-2">$\{e.channel\}</span> <span class="$\{e.status === 'EXECUTED' ? 'text-neon-green' : 'text-yellow-500'\} text-[9px]">$\{e.status === 'EXECUTED' ? '[COMPLETED]' : '[PENDING]'\}</span> </div> `).join(''); \};\
+        \
+        window.addMarketingEvent = async () => \{ \
+            if (!user) return; \
+            const prop = document.getElementById('mkt-prop').value; // Now reads from select\
+            const channel = document.getElementById('mkt-channel-input').value; \
+            const dateStr = document.getElementById('mkt-date').value; \
+            if (!prop || !dateStr || !channel) \{ log('MISSING_INTEL', 'red'); return; \} \
+            try \{ \
+                await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'marketing_ops'), \{ property: prop, channel: channel, date: dateStr, status: 'PENDING', timestamp: Date.now() \}); \
+                document.getElementById('mkt-channel-input').value = ''; \
+                triggerActionFeedback('view-marketing'); \
+                log(`VECTOR_DEPLOYED: $\{channel\}`, 'var(--neon-green)'); \
+                window.addXP(15); \
+            \} catch (e) \{ log('DEPLOY_FAIL', 'red'); \} \
+        \};\
+        \
+        window.deleteMarketingEvent = (e, id) => \{ e.stopPropagation(); if (!user) return; window.showConfirm("PURGE MARKETING OP?", async () => \{ try \{ await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'marketing_ops', id)); log('OP_PURGED', 'var(--neon-red)'); \} catch(err) \{\} \}); \};\
+        window.toggleMarketingStatus = async (id, currentStatus) => \{ if (!user) return; const newStatus = currentStatus === 'EXECUTED' ? 'PENDING' : 'EXECUTED'; try \{ await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'marketing_ops', id), \{ status: newStatus \}); if (newStatus === 'EXECUTED') \{ playSFX('confirm'); window.addXP(25); \} \} catch(e) \{\} \};\
+        window.jumpToMonth = (monthIndex) => \{ currentMktDate.setMonth(monthIndex); window.changeMarketingView('month'); \};\
+        const renderMarketingMonth = () => \{ const container = document.getElementById('cal-days-container'); const label = document.getElementById('mkt-current-month'); const year = currentMktDate.getFullYear(); const month = currentMktDate.getMonth(); label.innerText = `MONTH $\{month + 1\} // $\{year\}`; const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate(); const prevMonthDays = new Date(year, month, 0).getDate(); let html = ''; for (let i = firstDay - 1; i >= 0; i--) \{ html += `<div class="cal-day-cell other-month text-gray-500">$\{prevMonthDays - i\}</div>`; \} const today = new Date(); const visibleEvents = selectedPropertyFilter === 'ALL' ? marketingEvents : marketingEvents.filter(e => e.property === selectedPropertyFilter); for (let day = 1; day <= daysInMonth; day++) \{ const dateString = `$\{year\}-$\{String(month + 1).padStart(2, '0')\}-$\{String(day).padStart(2, '0')\}`; const isToday = (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()); const daysEvents = visibleEvents.filter(e => e.date === dateString); let eventsHtml = daysEvents.map(e => ` <div class="cal-event $\{e.status === 'EXECUTED' ? 'done border-neon-green text-neon-green' : (e.channel.includes('INSTAGRAM') ? 'border-neon-pink text-neon-pink' : 'border-neon-blue text-neon-blue')\}" title="$\{e.property\} - $\{e.channel\}" onclick="window.toggleMarketingStatus('$\{e.id\}', '$\{e.status || 'PENDING'\}')"> <span class="mr-1 font-mono font-bold">$\{e.status === 'EXECUTED' ? '[X]' : '[ ]'\}</span> <span class="truncate flex-1">$\{e.channel\}: $\{e.property.substring(0,8)\}</span> <span class="del-btn" onclick="window.deleteMarketingEvent(event, '$\{e.id\}')">[x]</span> </div>`).join(''); html += ` <div class="cal-day-cell $\{isToday ? 'today' : ''\}" onclick="document.getElementById('mkt-date').value='$\{dateString\}'"> <div class="font-bold opacity-50 mb-1">$\{day\}</div> <div class="space-y-1">$\{eventsHtml\}</div> </div> `; \} container.innerHTML = html; const total = visibleEvents.length; const executed = visibleEvents.filter(e => e.status === 'EXECUTED').length; document.getElementById('stat-vectors').innerText = total; document.getElementById('stat-pending').innerText = total - executed; document.getElementById('stat-executed').innerText = executed; document.getElementById('mkt-progress-bar').style.width = `$\{total > 0 ? Math.round((executed / total) * 100) : 0\}%`; document.getElementById('mkt-progress-text').innerText = `$\{total > 0 ? Math.round((executed / total) * 100) : 0\}%`; \};\
+        const renderMarketingYear = () => \{ const container = document.getElementById('year-grid-container'); const year = currentMktDate.getFullYear(); const visibleEvents = selectedPropertyFilter === 'ALL' ? marketingEvents : marketingEvents.filter(e => e.property === selectedPropertyFilter); let html = ''; for (let m = 0; m < 12; m++) \{ const daysInM = new Date(year, m + 1, 0).getDate(); const firstD = new Date(year, m, 1).getDay(); let gridHtml = ''; for(let k=0; k<firstD; k++) gridHtml += `<div class="mini-day opacity-0"></div>`; for(let d=1; d<=daysInM; d++) \{ const dStr = `$\{year\}-$\{String(m + 1).padStart(2, '0')\}-$\{String(d).padStart(2, '0')\}`; const hasEvent = visibleEvents.some(e => e.date === dStr); gridHtml += `<div class="mini-day $\{hasEvent ? 'has-event' : ''\}"></div>`; \} html += `<div class="mini-cal" onclick="window.jumpToMonth($\{m\})"><div class="mini-cal-title">M$\{m+1\}</div><div class="mini-cal-grid">$\{gridHtml\}</div></div>`; \} container.innerHTML = html; \};\
+        safeAddClick('btn-mkt-add', window.addMarketingEvent);\
+\
+        const initMatrixRain = () => \{ \
+            const c = document.getElementById('matrix-canvas'); \
+            if (!c) return null;\
+            const x = c.getContext('2d'); \
+            \
+            const resize = () => \{\
+                c.width = window.innerWidth || 1024; \
+                c.height = window.innerHeight || 768; \
+            \};\
+            resize();\
+            window.addEventListener('resize', resize);\
+            \
+            const s = '01'; \
+            const f = 16; \
+            let d = []; \
+            for(let i=0; i<c.width/f; i++) d[i]=1; \
+            \
+            const dr = () => \{ \
+                x.fillStyle = 'rgba(5, 5, 7, 0.05)'; \
+                x.fillRect(0, 0, c.width, c.height); \
+                x.fillStyle = '#0F0'; \
+                x.font = f + 'px monospace'; \
+                for(let i=0;i<d.length;i++) \{ \
+                    const t = s.charAt(Math.floor(Math.random()*s.length)); \
+                    x.fillText(t, i*f, d[i]*f); \
+                    if(d[i]*f > c.height && Math.random() > 0.975) d[i]=0; \
+                    d[i]++; \
+                \} \
+                if (d.length < c.width/f) \{\
+                    for(let i=d.length; i<c.width/f; i++) d[i]=1;\
+                \}\
+            \}; \
+            return setInterval(dr, 30); \
+        \};\
+        let matrixInterval;\
+        setTimeout(() => \{ matrixInterval = initMatrixRain(); \}, 50);\
+\
+        const RANKS = [\{ name: "INITIATE", min: 0 \}, \{ name: "OPERATIVE", min: 500 \}, \{ name: "SPECIALIST", min: 1500 \}, \{ name: "VANGUARD", min: 3500 \}, \{ name: "SHADOW_ELITE", min: 7500 \}, \{ name: "LEGEND", min: 15000 \}];\
+        const calculateRank = (xp) => \{ let rank = RANKS[0]; let nextRank = RANKS[1]; for (let i = 0; i < RANKS.length; i++) \{ if (xp >= RANKS[i].min) \{ rank = RANKS[i]; nextRank = RANKS[i + 1] || \{ min: xp * 1.5 \}; \} \} return \{ current: rank.name, nextLimit: nextRank.min \}; \};\
+        const updateRankUI = () => \{ const b = document.getElementById('rank-display'); const t = document.getElementById('rank-title'); const v = document.getElementById('rank-xp'); const f = document.getElementById('rank-bar-fill'); if(!b) return; b.classList.remove('hidden'); const r = calculateRank(userProfile.xp); t.innerText = r.current; v.innerText = `$\{userProfile.xp\} XP`; const min = RANKS.find(x => x.name === r.current).min; const range = r.nextLimit - min; const pct = range > 0 ? ((userProfile.xp - min) / range) * 100 : 100; f.style.width = `$\{pct\}%`; \};\
+        window.addXP = async (amount) => \{ if (!user) return; const newXP = (userProfile.xp || 0) + amount; try \{ await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'stats'), \{ xp: newXP \}, \{ merge: true \}); playSFX('chirp'); \} catch(e) \{\} \};\
+\
+        window.switchTab = (view) => \{ ['dashboard', 'crm', 'marketing', 'warroom', 'intel'].forEach(v => \{ const el = document.getElementById(`view-$\{v\}`); const tab = document.getElementById(`tab-$\{v === 'dashboard' ? 'command' : v\}`); if (v === view) \{ el.classList.remove('hidden'); if(tab) tab.classList.add('active-tab'); \} else \{ el.classList.add('hidden'); if(tab) tab.classList.remove('active-tab'); \} \}); if (view === 'marketing') renderMarketingMonth(); if (view === 'warroom') renderWarRoom(); playSFX('clunk'); \};\
+\
+        // --- SENTINEL AI LOGIC ---\
+        window.addContact = async () => \{\
+            if (!user) return;\
+            const name = document.getElementById('crm-name').value;\
+            const role = document.getElementById('crm-role').value.toUpperCase().replace(/\\s+/g, '_');\
+            const status = document.getElementById('crm-status').value.toUpperCase().replace(/\\s+/g, '_');\
+            const reqs = document.getElementById('crm-reqs').value;\
+            const time = document.getElementById('crm-timeline').value;\
+            const notes = document.getElementById('crm-notes').value;\
+            if (!name) return;\
+            \
+            try \{ \
+                await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'crm_contacts'), \{ name, role, status, reqs, time, notes, timestamp: Date.now() \}); \
+                \
+                // SENTINEL AI TRIGGER\
+                if (status.includes('WARM') || status.includes('HOT')) \{\
+                    const futureDate = new Date();\
+                    futureDate.setDate(futureDate.getDate() + 7);\
+                    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'action_queue'), \{ \
+                        text: `SENTINEL: RE-ENGAGE $\{name.toUpperCase()\}`, \
+                        done: false, \
+                        timestamp: futureDate.getTime() \
+                    \});\
+                    log(`SENTINEL_AI: STASIS PROTOCOL ACTIVATED FOR $\{name\}`, 'var(--neon-purple)');\
+                \}\
+\
+                ['crm-name','crm-reqs','crm-timeline','crm-notes', 'crm-role', 'crm-status'].forEach(id => \{\
+                    const el = document.getElementById(id);\
+                    if(el) el.value = '';\
+                \}); \
+                triggerActionFeedback('view-crm'); \
+                window.addXP(50); \
+            \} catch (e) \{\}\
+        \};\
+        window.deleteContact = async (id) => \{ if (!user) return; window.showConfirm("BURN FILE?", async () => \{ try \{ await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'crm_contacts', id)); \} catch(e) \{\} \}); \};\
+        const renderContacts = () => \{ const list = document.getElementById('crm-list'); if(!list) return; list.innerHTML = contacts.sort((a,b) => b.timestamp - a.timestamp).map(c => ` <div class="border border-neon-blue/30 bg-black/40 p-4 relative group hover:border-neon-pink transition-colors"> <div class="absolute top-0 right-0 p-1"><button onclick="window.deleteContact('$\{c.id\}')" class="text-[9px] text-red-500 hover:text-white">[BURN]</button></div> <h3 class="font-bold text-neon-blue text-sm mb-1">$\{c.name\}</h3> <span class="text-[9px] bg-neon-pink/10 text-neon-pink px-1 rounded mb-2 inline-block">$\{c.role\}</span> <span class="text-[9px] bg-neon-yellow/10 text-neon-yellow px-1 rounded mb-2 inline-block ml-1">$\{c.status || 'COLD'\}</span> <div class="space-y-1 text-[11px] text-gray-300 mt-2"><p><span class="text-gray-500">OBJ:</span> $\{c.reqs || 'N/A'\}</p><p><span class="text-gray-500">ETA:</span> $\{c.time || 'N/A'\}</p></div> <div class="mt-3 pt-2 border-t border-gray-800 text-[10px] italic opacity-70">"$\{c.notes || 'No intel logged.'\}"</div> </div>`).join(''); \};\
+        safeAddClick('btn-crm-add', window.addContact);\
+\
+        const performDecryption = (element, finalString, speed = 50) => \{ if (!element) return; element.dataset.cleanText = finalString; const s = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890@#$%&?"; let i = 0; const int = setInterval(() => \{ element.innerText = finalString.split("").map((c, idx) => \{ if (idx < i) return finalString[idx]; return s[Math.floor(Math.random() * s.length)]; \}).join(""); if (i >= finalString.length) clearInterval(int); i += 1 / 2; \}, speed); \};\
+        const animateWaveform = (isActive) => \{ document.querySelectorAll('.wave-bar').forEach(bar => \{ if (isActive) \{ bar.style.height = `$\{Math.random() * 20 + 5\}px`; \} else \{ bar.style.height = '5px'; \} \}); \};\
+        let waveInterval = setInterval(() => animateWaveform(false), 200);\
+        const updateLoad = (val) => \{ currentLoad = Math.min(100, currentLoad + val); const b = document.getElementById('neural-load-bar'); if(b) b.style.width = `$\{currentLoad\}%`; if(document.getElementById('load-pct')) document.getElementById('load-pct').innerText = `$\{Math.floor(currentLoad)\}%`; if (currentLoad > 80 && b) b.style.background = 'var(--neon-pink)'; \};\
+        const playSFX = (type) => \{ try \{ const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain).connect(ctx.destination); const now = ctx.currentTime; if (type === 'clunk') \{ osc.type = 'square'; osc.frequency.setValueAtTime(80, now); osc.frequency.exponentialRampToValueAtTime(20, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1); osc.start(now); osc.stop(now + 0.1); \} else if (type === 'chirp') \{ osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(1500, now + 0.05); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1); osc.start(now); osc.stop(now + 0.1); \} else if (type === 'confirm') \{ osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.linearRampToValueAtTime(880, now + 0.1); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15); osc.start(now); osc.stop(now + 0.15); \} \} catch(e) \{\} \};\
+        const triggerActionFeedback = (moduleId) => \{ const el = document.getElementById(moduleId); if (!el) return; playSFX('chirp'); el.classList.add('glitch-active'); setTimeout(() => el.classList.remove('glitch-active'), 400); updateLoad(5); \};\
+        const log = (msg, color = 'var(--neon-blue)') => \{ const f = document.getElementById('terminal-feed'); if (!f) return; const e = document.createElement('div'); e.style.color = color; e.textContent = `>> [$\{new Date().toLocaleTimeString('en-US')\}] $\{msg\}`; f.prepend(e); \};\
+        const getGeminiMarketData = async () => \{ try \{ const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=$\{apiKey\}`, \{ method: 'POST', headers: \{ 'Content-Type': 'application/json' \}, body: JSON.stringify(\{ contents: [\{ parts: [\{ text: "Search live price and change for S&P 500 E-mini Futures (ES=F) and NASDAQ (^IXIC). Return ONLY JSON object with keys 'ES_FUT' and 'NASDAQ' containing 'price' (number) and 'change' (number)." \}] \}], tools: [\{ "google_search": \{\} \}] \}) \}); const d = await r.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text; const c = t.replace(/```json|```/g, '').trim(); return JSON.parse(c); \} catch (e) \{ return null; \} \};\
+        const initMarketTicker = async () => \{ const t = document.getElementById('market-ticker-track'); if (!t) return; const fmt = (s, p, c) => \{\
+            const formattedPrice = (p != null) ? p.toLocaleString(undefined, \{minimumFractionDigits: 2, maximumFractionDigits: 2\}) : "N/A";\
+            const formattedChange = (c != null) ? c.toFixed(2) : "0.00";\
+            return ` <div class="ticker-item"> <span class="ticker-symbol">$\{s\}</span> <span class="ticker-price">$$\{formattedPrice\}</span> <span class="$\{(c >= 0) ? 'ticker-up' : 'ticker-down'\}">($\{(c >= 0) ? '+' : ''\}$\{formattedChange\}%)</span> </div> `;\
+        \}; let h = ''; try \{ const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true'); const d = await r.json(); if (d.bitcoin) h += fmt('BTC', d.bitcoin.usd, d.bitcoin.usd_24h_change); if (d.ethereum) h += fmt('ETH', d.ethereum.usd, d.ethereum.usd_24h_change); if (d.solana) h += fmt('SOL', d.solana.usd, d.solana.usd_24h_change); \} catch (e) \{ h += fmt('BTC', 98000, 0.5); h += fmt('ETH', 3800, -0.2); \} const s = await getGeminiMarketData(); if (s) \{ if (s.ES_FUT) h += fmt('ES=F', s.ES_FUT.price, s.ES_FUT.change); if (s.NASDAQ) h += fmt('NASDAQ', s.NASDAQ.price, s.NASDAQ.change); \} else \{ h += fmt('ES=F', 5950, 0.4); h += fmt('NASDAQ', 18500, -0.1); \} t.innerHTML = new Array(12).fill(h).join(''); \};\
+        const callGemini = async (prompt, system, outputId, btnId) => \{ const b = document.getElementById(btnId); const o = document.getElementById(outputId); if (!b || !o) return; b.disabled = true; o.innerHTML = `<span class="animate-pulse text-pink-500 font-bold">DECRYPTING_SIGNAL...</span>`; try \{ const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=$\{apiKey\}`, \{ method: 'POST', headers: \{ 'Content-Type': 'application/json' \}, body: JSON.stringify(\{ contents: [\{ parts: [\{ text: prompt \}] \}], systemInstruction: \{ parts: [\{ text: system \}] \}, tools: [\{ "google_search": \{\} \}] \}) \}); const d = await r.json(); const res = d.candidates?.[0]?.content?.parts?.[0]?.text || "NULL"; if (outputId === 'ai-protocol-output') o.classList.remove('hidden'); performDecryption(o, res.slice(0, 1500) + (res.length > 1500 ? "..." : "")); log(`GEMINI_SYNC: SUCCESS`, 'var(--neon-green)'); \} catch (err) \{ o.innerHTML = `<span class="text-red-500">UPLINK_FAILURE</span>`; \} finally \{ b.disabled = false; \} \};\
+        const openProtocolEditor = (mode, dayIdx, taskIdx = null) => \{ const m = document.getElementById('protocol-editor-modal'); const ti = document.getElementById('edit-time'); const c = document.getElementById('edit-cat'); const tx = document.getElementById('edit-text'); const sb = document.getElementById('btn-editor-save'); currentEditDay = dayIdx; currentEditTaskIndex = taskIdx; if (mode === 'edit' && taskIdx !== null) \{ const t = protocolContent.find(d => d.day === dayIdx).schedule[taskIdx]; ti.value = t.time; c.value = t.cat; tx.value = t.text; sb.textContent = 'UPDATE_VECTOR'; \} else \{ ti.value = ''; c.value = ''; tx.value = ''; sb.textContent = 'INJECT_VECTOR'; \} m.style.display = 'flex'; \};\
+        const closeProtocolEditor = () => \{ document.getElementById('protocol-editor-modal').style.display = 'none'; \};\
+        const saveProtocolTask = async () => \{ if (!user || currentEditDay === null) return; const time = document.getElementById('edit-time').value; const cat = document.getElementById('edit-cat').value; const text = document.getElementById('edit-text').value; if (!time || !text) return; const dayObj = protocolContent.find(d => d.day === currentEditDay); if (!dayObj) return; if (currentEditTaskIndex !== null) \{ dayObj.schedule[currentEditTaskIndex] = \{ time, cat, text \}; \} else \{ dayObj.schedule.push(\{ time, cat, text \}); \} try \{ await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'weekly_protocol', 'data'), \{ protocol: protocolContent \}); renderAccordion(); closeProtocolEditor(); triggerActionFeedback('accordion-container'); log('PROTOCOL_UPDATED', 'var(--neon-green)'); window.addXP(20); \} catch (e) \{\} \};\
+        const deleteProtocolTask = async (dayIdx, taskIdx) => \{ if (!user) return; window.showConfirm("DELETE PROTOCOL?", async () => \{ const d = protocolContent.find(d => d.day === dayIdx); if (d) \{ d.schedule.splice(taskIdx, 1); try \{ await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'weekly_protocol', 'data'), \{ protocol: protocolContent \}); renderAccordion(); log('VECTOR_DELETED', 'var(--neon-pink)'); \} catch (e) \{\} \} \}); \};\
+        window.openProtocolEdit = (d, t) => openProtocolEditor('edit', d, t); window.openProtocolAdd = (d) => openProtocolEditor('add', d); window.deleteProtocolTask = (d, t) => deleteProtocolTask(d, t); safeAddClick('btn-editor-cancel', closeProtocolEditor); safeAddClick('btn-editor-save', saveProtocolTask);\
+        \
+        // MODIFIED: UNIFIED CHECKLIST RENDERER\
+        const renderChecklist = () => \{ \
+            const d = new Date();\
+            const todayStr = `$\{d.getFullYear()\}-$\{String(d.getMonth()+1).padStart(2,'0')\}-$\{String(d.getDate()).padStart(2,'0')\}`;\
+            \
+            // Combine manual tasks and today's marketing events\
+            const unified = [\
+                ...dailyTasks.map(t => (\{ id: t.id, text: t.text, done: t.done, type: 'task', timestamp: t.timestamp \})),\
+                ...marketingEvents.filter(e => e.date === todayStr).map(m => (\{ id: m.id, text: `[MKT] $\{m.property\} - $\{m.channel\}`, done: m.status === 'EXECUTED', type: 'mkt', timestamp: m.timestamp || 0 \}))\
+            ];\
+            \
+            unified.sort((a,b) => a.done - b.done || a.timestamp - b.timestamp);\
+            \
+            const html = unified.map(t => ` \
+                <div class="task-item $\{t.done ? 'border-neon-green/30' : ''\}"> \
+                    <span onclick="$\{t.type === 'mkt' ? `window.toggleMarketingStatus('$\{t.id\}', '$\{t.done ? 'EXECUTED' : 'PENDING'\}')` : `window.toggleTask('$\{t.id\}', $\{t.done\})`\}" class="task-checkbox">$\{t.done ? '[X]' : '[ ]'\}</span> \
+                    <span class="task-content $\{t.done ? 'task-done' : ''\} $\{t.type === 'mkt' && !t.done ? 'text-neon-pink' : ''\}">$\{t.text\}</span> \
+                    $\{t.type === 'task' ? `<span onclick="window.removeTask('$\{t.id\}')" class="task-delete">[DEL]</span>` : ''\} \
+                </div> \
+            `).join('') || '<p class="text-[10px] opacity-40 italic">QUEUE EMPTY.</p>'; \
+            \
+            // Render to Main View\
+            const mainList = document.getElementById('task-list');\
+            if(mainList) mainList.innerHTML = html;\
+            \
+            // Render to Floating HUD\
+            const floatList = document.getElementById('floating-task-list');\
+            if(floatList) floatList.innerHTML = html;\
+            \
+            // Update Floating Notification Badge\
+            const pendingCount = unified.filter(x => !x.done).length;\
+            const badge = document.getElementById('floating-task-badge');\
+            if (badge) \{\
+                if (pendingCount > 0) \{\
+                    badge.style.display = 'flex';\
+                    badge.innerText = pendingCount;\
+                \} else \{\
+                    badge.style.display = 'none';\
+                \}\
+            \}\
+        \}; \
+\
+        // NEW: FLOATING HUD TOGGLE\
+        window.toggleFloatingTasks = () => \{\
+            const panel = document.getElementById('floating-task-panel');\
+            if (panel.classList.contains('hidden')) \{\
+                panel.classList.remove('hidden');\
+                playSFX('clunk');\
+            \} else \{\
+                panel.classList.add('hidden');\
+            \}\
+        \};\
+        safeAddClick('btn-float-tasks', window.toggleFloatingTasks);\
+\
+        window.addTask = async () => \{ const i = document.getElementById('new-task-input'); if (!i.value.trim() || !user) return; try \{ await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'action_queue'), \{ text: i.value, done: false, timestamp: Date.now() \}); i.value = ''; triggerActionFeedback('daily-ops-checklist'); \} catch (e) \{\} \};\
+        window.toggleTask = async (id, s) => \{ if (!user) return; try \{ await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'action_queue', id), \{ done: !s \}); if (!s) \{ playSFX('confirm'); window.addXP(10); \} \} catch (e) \{\} \};\
+        window.removeTask = async (id) => \{ if (!user) return; try \{ await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'action_queue', id)); \} catch (e) \{\} \};\
+        safeAddClick('btn-add-task', window.addTask);\
+        window.updateKPI = async (type) => \{ if (!user) return; try \{ const r = doc(db, 'artifacts', appId, 'users', user.uid, 'kpi_stats', 'daily'); const n = \{ ...kpi \}; n[type] = (n[type] || 0) + 1; await setDoc(r, n, \{ merge: true \}); triggerActionFeedback('module-kpi'); let x = 0; if (type === 'dials') x = 5; if (type === 'contacts') x = 20; if (type === 'appts') x = 50; window.addXP(x); \} catch (e) \{\} \};\
+        const renderKPI = () => \{ if(!document.getElementById('val-dials')) return; document.getElementById('val-dials').innerText = kpi.dials || 0; document.getElementById('val-contacts').innerText = kpi.contacts || 0; document.getElementById('val-appts').innerText = kpi.appts || 0; const c = kpi.dials > 0 ? ((kpi.contacts / kpi.dials) * 100).toFixed(1) : 0; const b = kpi.contacts > 0 ? ((kpi.appts / kpi.contacts) * 100).toFixed(1) : 0; document.getElementById('rate-contact').innerText = `$\{c\}%`; document.getElementById('rate-book').innerText = `$\{b\}%`; \};\
+        safeAddClick('btn-calc-cap', () => \{ const p = parseFloat(document.getElementById('calc-price').value); const n = parseFloat(document.getElementById('calc-noi').value); const r = document.getElementById('calc-result'); if (p > 0 && n > 0) \{ const c = ((n / p) * 100).toFixed(2); r.innerText = `$\{c\}%`; r.style.color = 'var(--neon-green)'; triggerActionFeedback('module-math'); \} else \{ r.innerText = "ERR"; r.style.color = 'red'; \} \});\
+        window.deleteTx = async (txId) => \{ if (!user) return; window.showConfirm("DELETE RECORD?", async () => \{ try \{ await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'transactions', txId)); triggerActionFeedback('module-fin'); log(`PURGE_SUCCESS`, 'var(--neon-green)'); \} catch (e) \{ log(`PURGE_ERR`, 'red'); \} \}); \};\
+        window.toggleDayNode = (h) => \{ const n = h.parentElement; const e = n.classList.contains('expanded'); document.querySelectorAll('.day-node').forEach(x => x.classList.remove('expanded')); if (!e) \{ n.classList.add('expanded'); playSFX('clunk'); \} \};\
+        const renderUI = () => \{ const gb = document.getElementById('gci-bar'); const gt = document.getElementById('gci-text'); const ib = document.getElementById('invest-bar'); const it = document.getElementById('invest-text'); const h = document.getElementById('transaction-history'); const nf = document.getElementById('notes-feed'); if (gb && gt) \{ const c = transactions.filter(t => t.type !== 'PENDING' && t.type !== 'INVESTMENT'); const t = c.reduce((a, x) => a + (x.amount || 0), 0); const p = Math.min((t / GOAL_GCI) * 100, 100); gb.style.width = `$\{p\}%`; const s = `$\{p.toFixed(1)\}% SYNCED ($$\{t.toLocaleString()\})`; if (gt.innerText !== s) performDecryption(gt, s); \} if (ib && it) \{ const i = transactions.filter(t => t.type === 'INVESTMENT'); const ti = i.reduce((a, x) => a + (x.amount || 0), 0); const pi = Math.min((ti / GOAL_INVEST) * 100, 100); ib.style.width = `$\{pi\}%`; const si = `$\{pi.toFixed(1)\}% SECURED ($$\{ti.toLocaleString()\})`; if (it.innerText !== si) performDecryption(it, si); \} if (h) \{ h.innerHTML = transactions.sort((a,b) => b.timestamp - a.timestamp).slice(0, 8).map(t => \{ let c = 'text-cyan-400'; if (t.type === 'PENDING') c = 'text-yellow-400'; if (t.type === 'INVESTMENT') c = 'text-neon-purple'; return ` <div class="tx-log-item"> <span class="$\{c\} font-bold">>> $\{t.type\} $$\{(t.amount || 0).toLocaleString()\}</span> <span onclick="window.deleteTx('$\{t.id\}')" class="text-pink-500 hover:text-white transition-colors cursor-pointer">[D]</span> </div>`; \}).join('') || '<p class="opacity-20 italic">No logs found.</p>'; \} if (nf) \{ nf.innerHTML = notes.sort((a,b) => b.timestamp - a.timestamp).slice(0, 10).map(n => ` <div class="mb-4 border-l-2 border-pink-500/40 pl-4 bg-white/5 p-2"> <div class="text-[10px] opacity-40 font-bold mb-1">$\{new Date(n.timestamp).toLocaleString()\}</div> <div class="text-sm leading-relaxed">$\{n.text\}</div> </div>`).join('') || '<p class="opacity-20 italic">Telemetry array empty.</p>'; \} \};\
+        const renderAccordion = () => \{ const c = document.getElementById('accordion-container'); const t = new Date().getDay(); c.innerHTML = protocolContent.map(d => ` <div class="day-node $\{d.day === t ? 'active-protocol' : ''\}"> <div class="day-node-header hex-trigger" data-id="EXPAND_NODE" onclick="window.toggleDayNode(this)"> <span class="font-bold text-pink-500 text-base tracking-[3px] uppercase">$\{d.label\}</span> <span class="text-xs font-bold text-cyan-400/80">$\{d.day === t ? '[ACTIVE]' : '[LOCKED]'\}</span> </div> <div class="day-node-content"> <div class="space-y-3 pt-2"> $\{d.schedule.map((s, i) => ` <div class="group relative flex gap-4 items-start border-b border-gray-800 pb-2 border-dashed border-opacity-30"> <div class="schedule-time text-xs pt-0.5">$\{s.time\}</div> <div class="schedule-line flex-1"> <div class="text-[10px] text-green-400 font-bold tracking-wider mb-0.5">[$\{s.cat\}]</div> <div class="text-sm text-gray-300 font-sans leading-tight opacity-90">$\{s.text\}</div> </div> <div class="absolute right-0 top-0 hidden group-hover:flex bg-black border border-gray-700"> <button onclick="window.openProtocolEdit($\{d.day\}, $\{i\})" class="px-2 text-[8px] text-neon-blue hover:bg-neon-blue hover:text-black">EDIT</button> <button onclick="window.deleteProtocolTask($\{d.day\}, $\{i\})" class="px-2 text-[8px] text-neon-red hover:bg-neon-red hover:text-black">DEL</button> </div> </div> `).join('')\} </div> <button onclick="window.openProtocolAdd($\{d.day\})" class="w-full text-[10px] text-center border border-dashed border-gray-800 text-gray-500 hover:text-neon-blue hover:border-neon-blue py-2 mt-4 uppercase tracking-widest transition-all">+ INJECT_NEW_VECTOR</button> </div> </div>`).join(''); \};\
+        const initAuth = async () => \{ if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); else await signInAnonymously(auth); \};\
+        onAuthStateChanged(auth, async (u) => \{ \
+            user = u; \
+            if (user) \{ \
+                log(`HUD_UPLINK: STABLE [ID:$\{user.uid.slice(0,6)\}]`, 'var(--neon-green)'); \
+                \
+                const errCb = (e) => \{ console.error("Sync Error:", e); log(`SYNC_ERROR`, 'red'); \};\
+\
+                onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'warroom'), d => \{ \
+                    if (d.exists() && d.data().stages) \{ \
+                        DEAL_STAGES = d.data().stages; \
+                        renderWarRoom(); \
+                    \} \
+                \}, errCb);\
+\
+                onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'transactions'), s => \{ transactions = s.docs.map(d => (\{id: d.id, ...d.data()\})); renderUI(); \}, errCb); \
+                onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'daily_notes'), s => \{ notes = s.docs.map(d => (\{id: d.id, ...d.data()\})); renderUI(); \}, errCb); \
+                onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'kpi_stats', 'daily'), d => \{ kpi = d.data() || \{ dials: 0, contacts: 0, appts: 0 \}; renderKPI(); \}, errCb); \
+                onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'action_queue'), s => \{ dailyTasks = s.docs.map(d => (\{id: d.id, ...d.data()\})); renderChecklist(); \}, errCb); \
+                onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'weekly_protocol', 'data'), d => \{ if (d.exists()) \{ protocolContent = d.data().protocol; renderAccordion(); \} \}, errCb); \
+                onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'crm_contacts'), s => \{ contacts = s.docs.map(d => (\{id: d.id, ...d.data()\})); renderContacts(); \}, errCb); \
+                onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'stats'), d => \{ if (d.exists()) \{ userProfile = d.data(); updateRankUI(); \} \}, errCb); \
+                onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'marketing_ops'), s => \{ \
+                    marketingEvents = s.docs.map(d => (\{id: d.id, ...d.data()\})); \
+                    populatePropertyFilter(); \
+                    renderMarketingMonth(); \
+                    renderMarketingYear(); \
+                    renderPropertyDossier(); \
+                    renderChecklist(); // Sync marketing events into immediate action queue\
+                    if(currentIntelId) renderPropertyMarketing();\
+                \}, errCb); \
+                onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'active_deals'), s => \{ activeDeals = s.docs.map(d => (\{id: d.id, ...d.data()\})); renderWarRoom(); \}, errCb); \
+                onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'property_intel'), s => \{ \
+                    propertyFolders = s.docs.map(d => (\{id: d.id, ...d.data()\})); \
+                    renderPropertyFolders(); \
+                    populateMarketingDropdown(); \
+                \}, errCb); \
+                onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'property_logs'), s => \{\
+                    propertyLogs = s.docs.map(d => (\{id: d.id, ...d.data()\}));\
+                    if(currentIntelId) renderPropertyLogs();\
+                \}, errCb);\
+            \} \
+        \});\
+        \
+        // MODIFIED: STARTUP SEQUENCE INTERCEPTOR\
+        safeAddClick('btn-login', async () => \{ \
+            const b = document.getElementById('btn-login'); \
+            const s = document.getElementById('hacking-sequence'); \
+            const bt = document.getElementById('boot-sequence'); \
+            b.disabled = true; \
+            bt.style.display = 'none'; \
+            s.style.display = 'block'; \
+            const l = ["NEURAL_CALIBRATION...", "SYNCING_CHASSIS...", "DRAWING_WIRE_HUD...", "RECALIBRATING_OPTICS...", "DEPLOYED."]; \
+            for(let i=0; i < 15; i++) \{ \
+                const ln = document.createElement('div'); \
+                ln.className = 'boot-line text-cyan-400 font-mono'; \
+                ln.textContent = `[0x$\{Math.floor(Math.random()*16777215).toString(16).toUpperCase()\}] $\{l[i%5]\}`; \
+                s.appendChild(ln); \
+                s.scrollTop = s.scrollHeight; \
+                await sleep(50); \
+            \} \
+            \
+            // Hide hacking sequence\
+            s.style.display = 'none';\
+            \
+            // Compile Today's Directives\
+            const d = new Date();\
+            const todayStr = `$\{d.getFullYear()\}-$\{String(d.getMonth()+1).padStart(2,'0')\}-$\{String(d.getDate()).padStart(2,'0')\}`;\
+            const todaysMkt = marketingEvents.filter(e => e.date === todayStr && e.status !== 'EXECUTED');\
+            const pendingTasks = dailyTasks.filter(t => !t.done);\
+            \
+            const listEl = document.getElementById('startup-task-list');\
+            if (todaysMkt.length === 0 && pendingTasks.length === 0) \{\
+                listEl.innerHTML = '<div class="text-center opacity-50 py-10">NO URGENT DIRECTIVES FOR TODAY.<br>SYSTEM READY.</div>';\
+            \} else \{\
+                let html = '';\
+                todaysMkt.forEach(m => html += `<div class="bg-black/40 p-2 border-l-2 border-neon-pink mb-2"><span class="text-neon-pink font-bold">[MKT]</span> $\{m.property\} - $\{m.channel\}</div>`);\
+                pendingTasks.forEach(t => html += `<div class="bg-black/40 p-2 border-l-2 border-neon-blue mb-2"><span class="text-neon-blue font-bold">[CMD]</span> $\{t.text\}</div>`);\
+                listEl.innerHTML = html;\
+            \}\
+            \
+            // Show Confirmation Modal\
+            document.getElementById('startup-task-modal').style.display = 'flex';\
+        \});\
+\
+        // NEW: STARTUP ACCEPTANCE\
+        safeAddClick('btn-accept-tasks', async () => \{\
+            document.getElementById('startup-task-modal').style.display = 'none';\
+            document.getElementById('access-granted').style.display = 'block'; \
+            await sleep(800); \
+            document.getElementById('login-terminal').style.opacity = '0'; \
+            setTimeout(() => \{ \
+                document.getElementById('login-terminal').style.display = 'none'; \
+                clearInterval(matrixInterval); \
+                document.getElementById('main-app').style.display = 'block'; \
+                setTimeout(() => \{ \
+                    document.getElementById('main-app').classList.add('visible'); \
+                    document.getElementById('main-app').classList.add('crt-active'); \
+                    performDecryption(document.getElementById('mission-header'), "MISSION_2026", 100); \
+                    initMarketTicker(); \
+                    initQuote(); \
+                \}, 50); \
+            \}, 800);\
+        \});\
+\
+        safeAddClick('btn-record', async () => \{ \
+            if (!user) return; \
+            const a = parseInt(document.getElementById('deal-amount').value); \
+            let t = document.getElementById('deal-type').value.toUpperCase().replace(/\\s+/g, '_'); \
+            if (!t) t = 'CLOSED';\
+            if (isNaN(a)) return; \
+            try \{ \
+                await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'transactions'), \{ amount: a, type: t, timestamp: Date.now() \}); \
+                log(`DATA_STORED`, 'var(--neon-green)'); \
+                triggerActionFeedback('module-fin'); \
+                if(t.includes('CLOSED')) window.addXP(500); else window.addXP(100); \
+            \} catch (e) \{ log(`OP_FAILED`, 'red'); \} \
+        \});\
+        safeAddClick('btn-save-note', async () => \{ const i = document.getElementById('note-input'); if (!user || !i.value.trim()) return; try \{ await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'daily_notes'), \{ text: i.value, timestamp: Date.now() \}); i.value = ''; triggerActionFeedback('module-notes'); log(`LOG_STORED`, 'var(--neon-green)'); \} catch (e) \{ log(`LOG_FAILED`, 'red'); \} \});\
+        safeAddClick('btn-solve-objection', () => \{ const q = document.getElementById('objection-input').value; if (q) \{ triggerActionFeedback('module-neutral'); callGemini(`Rebuttal: "$\{q\}"`, "Elite CRE Advisor. 3 points.", 'objection-output', 'btn-solve-objection'); \} \});\
+        safeAddClick('btn-propaganda', () => \{ const q = document.getElementById('propaganda-input').value; if (q) \{ triggerActionFeedback('module-prop'); callGemini(`CRE social media brief for topic: "$\{q\}"`, "Viral CRE content strategist.", 'propaganda-output', 'btn-propaganda'); \} \});\
+        safeAddClick('btn-tactical', () => \{ const q = document.getElementById('tactical-input').value; if (q) \{ triggerActionFeedback('module-tactical'); callGemini(`Explain this CRE concept simply: "$\{q\}"`, "High-performance CRE coach.", 'tactical-output', 'btn-tactical'); \} \});\
+        safeAddClick('btn-gen-protocol', async () => \{ const i = document.getElementById('daily-objectives-input').value; if(!i) return; triggerActionFeedback('module-scheduler'); await callGemini(`Act as a high-performance CRE tactical commander. Analyze these raw objectives: "$\{i\}". Construct a highly efficient, hour-by-hour schedule (6:00 AM to 8:00 PM) using 12-hour AM/PM format that integrates these tasks with deep work blocks, recon, and admin. Format strictly as: TIME : [CATEGORY] : ACTION Use cyberpunk/military terminology.`, "Tactical Scheduler.", 'ai-protocol-output', 'btn-gen-protocol'); document.getElementById('btn-transfer-protocol').classList.remove('hidden'); \});\
+        safeAddClick('btn-transfer-protocol', () => \{ const o = document.getElementById('ai-protocol-output'); const r = o.dataset.cleanText || o.innerText; const l = r.split('\\n'); const n = []; l.forEach(x => \{ const c = x.trim(); if(!c) return; const p = c.split(':'); if(p.length >= 3) \{ const t = p[0].trim(); const ct = p[1].trim().replace(/[\\[\\]]/g, ''); const tx = p.slice(2).join(':').trim(); n.push(\{ time: t, cat: ct, text: tx \}); \} \}); if(n.length > 0) \{ const t = new Date().getDay(); const d = protocolContent.find(x => x.day === t); if(d) \{ d.schedule = n; setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'weekly_protocol', 'data'), \{ protocol: protocolContent \}); renderAccordion(); triggerActionFeedback('accordion-container'); log('PROTOCOL_OVERWRITTEN', 'var(--neon-green)'); document.getElementById('btn-transfer-protocol').classList.add('hidden'); \} \} \});\
+        safeAddClick('btn-ai-debrief', () => \{ currentLoad = 0; document.getElementById('neural-load-bar').style.width = '0%'; callGemini(`Analyze logs:\\n$\{notes.map(n => n.text).join('\\n')\}`, "Performance Analyst.", 'notes-feed', 'btn-ai-debrief'); \});\
+        let timerInt = null; let timerSec = 25 * 60; let isFocus = true; const updateTimer = () => \{ const m = Math.floor(timerSec / 60).toString().padStart(2, '0'); const s = (timerSec % 60).toString().padStart(2, '0'); document.getElementById('focus-timer-display').textContent = `$\{m\}:$\{s\}`; document.getElementById('timer-label').textContent = isFocus ? 'FOCUS' : 'REST'; document.getElementById('focus-timer-display').style.color = isFocus ? 'var(--neon-pink)' : 'var(--neon-green)'; \};\
+        safeAddClick('btn-toggle-timer', () => \{ if (timerInt) \{ clearInterval(timerInt); timerInt = null; document.getElementById('timer-chassis').classList.remove('heartbeat'); \} else \{ document.getElementById('timer-chassis').classList.add('heartbeat'); timerInt = setInterval(() => \{ timerSec--; if (timerSec < 0) \{ isFocus = !isFocus; timerSec = (isFocus ? 25 : 5) * 60; \} updateTimer(); \}, 1000); \} \});\
+        const initQuote = () => \{ const e = document.getElementById('daily-quote'); if(!e) return; const q = ["THE $100K TARGET IS NOT A SUGGESTION. IT IS A MANDATE. EXECUTE.", "FATIGUE IS A SIGNAL TO PUSH HARDER.", "YOUR COMPETITION IS SLEEPING. YOU ARE HUNTING.", "PROTOCOL 2026 DEMANDS TOTAL SACRIFICE.", "COMFORT IS A SYSTEM ERROR. PURGE IT.", "YOU DIDN'T LOG IN TO BE AVERAGE.", "EVERY DIAL IS A DATA POINT.", "INPUT EFFORT. OUTPUT EMPIRE.", "LOOK AT THE GCI BAR. IT'S NOT FULL.", "EMOTIONS ARE NOISE.", "THEY WATCH TV. YOU WATCH THE MARKET.", "A CLOSING TABLE IS THE ONLY ACCEPTABLE DESTINATION.", "PAIN IS JUST DATA LEAVING THE BODY.", "YOUR LEGACY IS WRITTEN IN THE CALLS YOU DON'T WANT TO MAKE.", "SYSTEM STATUS: HUNGRY.", "NOBODY IS COMING TO SAVE YOU.", "MEDIOCRE EFFORT YIELDS MEDIOCRE ASSETS.", "THE MARKET DOES NOT CARE ABOUT YOUR FEELINGS.", "BE UNDENIABLE.", "TODAY'S PAIN IS TOMORROW'S LEVERAGE."]; const r = q[Math.floor(Math.random() * q.length)]; performDecryption(e, `>> DAILY_INTEL: "$\{r\}"`, 30); \};\
+        window.onload = () => \{ initAuth(); setInterval(() => \{ document.getElementById('system-clock').textContent = new Date().toLocaleTimeString('en-US'); \}, 1000); renderAccordion(); \};\
+    </script>\
+</body>\
+</html>}
