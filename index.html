@@ -1233,7 +1233,12 @@
 
         const firebaseConfig = typeof __firebase_config !== 'undefined' && __firebase_config ? JSON.parse(__firebase_config) : fallbackConfig;
         const appId = typeof __app_id !== 'undefined' && __app_id ? __app_id : 'operative-2026';
+        
+        // This is for Firebase ONLY
         const apiKey = typeof __firebase_config !== 'undefined' && __firebase_config ? "" : fallbackConfig.apiKey; 
+        
+        // This is for the AI features (Scraping, AI Scheduler, Debrief, etc)
+        const geminiApiKey = typeof __firebase_config !== 'undefined' && __firebase_config ? "" : "AIzaSyDilpy0zsOV9ez7mVCActRp4nn1zUWIQao"; 
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -2095,6 +2100,12 @@
 
         // Added Exponential Backoff API Fetcher
         const fetchWithBackoff = async (url, options) => {
+            if (url.includes("YOUR_GEMINI_API_KEY_HERE")) {
+                console.error("ERROR: You must replace 'YOUR_GEMINI_API_KEY_HERE' on Line 1000 with a real Gemini API Key from https://aistudio.google.com/app/apikey");
+                throw new Error("MISSING_GEMINI_KEY");
+            }
+
+
             const delays = [1000, 2000, 4000, 8000, 16000];
             let lastErrData = "";
             for (let i = 0; i <= delays.length; i++) {
@@ -2158,7 +2169,7 @@
 
             try {
                 // REMOVED: tools: [{ "google_search": {} }]
-                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2273,7 +2284,7 @@
 
 
             try {
-                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2427,7 +2438,7 @@
 
 
             try {
-                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -3079,7 +3090,7 @@
         const log = (msg, color = 'var(--neon-blue)') => { const f = document.getElementById('terminal-feed'); if (!f) return; const e = document.createElement('div'); e.style.color = color; e.textContent = `>> [${new Date().toLocaleTimeString('en-US')}] ${msg}`; f.prepend(e); };
         const getGeminiMarketData = async () => { 
             try { 
-                const r = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { 
+                const r = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ 
@@ -3106,7 +3117,7 @@
             b.disabled = true; 
             o.innerHTML = `<span class="animate-pulse text-pink-500 font-bold">DECRYPTING_SIGNAL...</span>`; 
             try { 
-                const r = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, { 
+                const r = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ 
