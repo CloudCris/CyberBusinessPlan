@@ -1220,18 +1220,9 @@
         import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 
-        const firebaseConfig = {
-          apiKey: "AIzaSyD0r5wi3cMW_J7mltE4ckHxmpYC79_yQvU",
-          authDomain: "bpcyber-2431d.firebaseapp.com",
-          projectId: "bpcyber-2431d",
-          storageBucket: "bpcyber-2431d.firebasestorage.app",
-          messagingSenderId: "633336428365",
-          appId: "1:633336428365:web:176ac2cb5e84afcc8aa904",
-          measurementId: "G-7HJBXBVKPN"
-        };
-        
-        const appId = 'operative-2026';
-        const apiKey = firebaseConfig.apiKey; 
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'operative-2026';
+        const apiKey = ""; 
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
