@@ -736,7 +736,7 @@
                         </div>
                         <div class="w-full bg-black border border-gray-800 h-6 relative mb-2">
                             <div id="mkt-progress-bar" class="h-full bg-neon-green opacity-50 transition-all duration-500" style="width: 0%"></div>
-                            <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-[10px] font-bold tracking-widest text-white">
+                            <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-[10px] font-bold tracking-widest text-white shadow-black drop-shadow-md">
                                 EXECUTION_STATUS: <span id="mkt-progress-text" class="ml-2">0%</span>
                             </div>
                         </div>
@@ -931,7 +931,6 @@
 
 
         // --- GITHUB DEPLOYMENT CONFIGURATION ---
-        // 1. Paste your Firebase Config below (from Firebase Console):
         const myFirebaseConfig = {
             apiKey: "AIzaSyD0r5wi3cMW_J7mltE4ckHxmpYC79_yQvU",
             authDomain: "bpcyber-2431d.firebaseapp.com",
@@ -940,12 +939,9 @@
             messagingSenderId: "633336428365",
             appId: "1:633336428365:web:176ac2cb5e84afcc8aa904"
         };
-        
-        // 2. Paste your Google AI Studio (Gemini) API Key below:
         const myGeminiApiKey = "AIzaSyDOx3IRlb3omi9AGBrN_qmkqQ7gL4dcIfw"; 
 
 
-        // Environment Detection (Canvas vs GitHub)
         const isCanvasEnv = typeof __firebase_config !== 'undefined';
         const firebaseConfig = isCanvasEnv ? JSON.parse(__firebase_config) : myFirebaseConfig;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'operative-2026-github';
@@ -972,8 +968,7 @@
         let currentMktDate = new Date();
         let selectedPropertyFilter = 'ALL';
         let currentLinkedContacts = []; 
-        let currentEditDay = null;       
-        let currentEditTaskIndex = null; 
+        let currentEditDealId = null;
 
 
         const GOAL_GCI = 100000;
@@ -997,68 +992,6 @@
         window.escapeHtml = (unsafe) => {
             if(!unsafe) return '';
             return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-        };
-
-
-        window.fetchGemini = async (prompt, useSearch = false, pdfData = null) => {
-            // Use public model for GitHub, internal model for Canvas
-            const modelName = isCanvasEnv ? "gemini-2.5-flash-preview-09-2025" : "gemini-1.5-flash";
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-            const delays = [1000, 2000, 4000, 8000, 16000];
-            
-            for (let i = 0; i <= 5; i++) {
-                let payload = { contents: [{ parts: [{ text: prompt }] }] };
-                if (pdfData) payload.contents[0].parts.push({ inlineData: { mimeType: "application/pdf", data: pdfData } });
-                
-                if (useSearch) {
-                    if (i < 2) payload.tools = [{ "google_search": {} }];
-                    else if (i < 4) payload.tools = [{ "googleSearch": {} }];
-                }
-
-
-                try {
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if (text) return text;
-                    }
-                } catch (error) {}
-                
-                if (i < 5) await sleep(delays[i]);
-            }
-            throw new Error("API request failed after retries.");
-        };
-
-
-        window.extractAndParseJSON = (text) => {
-            if (!text) throw new Error("Empty AI Response");
-            let cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-            const startIdx = cleanText.indexOf('{');
-            const endIdx = cleanText.lastIndexOf('}');
-            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-                cleanText = cleanText.substring(startIdx, endIdx + 1);
-            }
-            try {
-                return JSON.parse(cleanText);
-            } catch (e) {
-                console.warn("JSON parse failed, attempting auto-repair...", e);
-                let repaired = cleanText;
-                if ((repaired.match(/"/g) || []).length % 2 !== 0) repaired += '"';
-                const openBraces = (repaired.match(/\{/g) || []).length;
-                const closeBraces = (repaired.match(/\}/g) || []).length;
-                const openBrackets = (repaired.match(/\[/g) || []).length;
-                const closeBrackets = (repaired.match(/\]/g) || []).length;
-                for (let i = 0; i < (openBrackets - closeBrackets); i++) repaired += ']';
-                for (let i = 0; i < (openBraces - closeBraces); i++) repaired += '}';
-                return JSON.parse(repaired);
-            }
         };
 
 
@@ -1114,6 +1047,87 @@
         window.confirmYes = () => { if(pendingConfirmAction) pendingConfirmAction(); window.closeConfirm(); };
 
 
+        window.fetchGemini = async (prompt, useSearch = false, pdfData = null, forceJson = false) => {
+            const modelName = isCanvasEnv ? "gemini-2.5-flash-preview-09-2025" : "gemini-1.5-flash";
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            
+            let lastErrorStr = "Unknown Error";
+
+
+            for (let i = 0; i <= 5; i++) {
+                let payload = { contents: [{ parts: [{ text: prompt }] }] };
+                if (pdfData) payload.contents[0].parts.push({ inlineData: { mimeType: "application/pdf", data: pdfData } });
+                
+                if (useSearch) {
+                    if (i < 2) payload.tools = [{ "google_search": {} }];
+                    else if (i < 4) payload.tools = [{ "googleSearch": {} }];
+                }
+
+
+                if (forceJson && !isCanvasEnv) {
+                    payload.generationConfig = { responseMimeType: "application/json" };
+                }
+
+
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (text) return text;
+                    } else {
+                        const errText = await response.text();
+                        console.error(`Gemini API Error (HTTP ${response.status}):`, errText);
+                        lastErrorStr = `HTTP_${response.status}`;
+                        
+                        if (response.status === 400) {
+                            forceJson = false;
+                            useSearch = false;
+                        }
+                    }
+                } catch (error) { 
+                    console.error("Fetch Network Error:", error);
+                    lastErrorStr = "NETWORK_ERROR";
+                }
+                
+                if (i < 5) await sleep(delays[i]);
+            }
+            throw new Error(lastErrorStr);
+        };
+
+
+        window.extractAndParseJSON = (text) => {
+            if (!text) throw new Error("Empty AI Response");
+            let cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const startIdx = cleanText.indexOf('{');
+            const endIdx = cleanText.lastIndexOf('}');
+            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                cleanText = cleanText.substring(startIdx, endIdx + 1);
+            }
+            try {
+                return JSON.parse(cleanText);
+            } catch (e) {
+                console.warn("JSON parse failed, attempting auto-repair...", e);
+                let repaired = cleanText;
+                if ((repaired.match(/"/g) || []).length % 2 !== 0) repaired += '"';
+                const openBraces = (repaired.match(/\{/g) || []).length;
+                const closeBraces = (repaired.match(/\}/g) || []).length;
+                const openBrackets = (repaired.match(/\[/g) || []).length;
+                const closeBrackets = (repaired.match(/\]/g) || []).length;
+                for (let i = 0; i < (openBrackets - closeBrackets); i++) repaired += ']';
+                for (let i = 0; i < (openBraces - closeBraces); i++) repaired += '}';
+                return JSON.parse(repaired);
+            }
+        };
+
+
         // --- AUTH LOGIC ---
         window.openSyncModal = () => { document.getElementById('sync-modal').style.display = 'flex'; window.playSFX('clunk'); };
         window.closeSyncModal = () => { document.getElementById('sync-modal').style.display = 'none'; };
@@ -1133,7 +1147,6 @@
             const email = formatCallsign(callsign);
             
             try {
-                // Link anonymous session to permanent credentials in Firebase Auth
                 const cred = EmailAuthProvider.credential(email, pass);
                 await linkWithCredential(auth.currentUser, cred);
                 
@@ -1151,7 +1164,6 @@
                 window.closeSyncModal();
             } catch(e) {
                 console.error("Sync Error:", e);
-                // If account exists or linking fails, fallback to creating a fresh account
                 if (e.code === 'auth/credential-already-in-use' || e.code === 'auth/email-already-in-use') {
                     btn.innerText = "ERR: CALLSIGN_TAKEN"; 
                     btn.style.color = "red";
@@ -1235,6 +1247,23 @@
                 if(el) window.performDecryption(el, ">> DAILY_INTEL: 'THE $100K TARGET IS NOT A SUGGESTION. IT IS A MANDATE. EXECUTE.'", 30); 
                 window.switchTab('dashboard');
             }, 500);
+        };
+
+
+        // --- STUBS FOR UI BOUND ACTIONS ---
+        window.saveProtocolTask = () => { window.log("PROTOCOL_UPDATED", "var(--neon-green)"); document.getElementById('protocol-editor-modal').style.display='none'; };
+        window.closeProtocolEditor = () => { document.getElementById('protocol-editor-modal').style.display='none'; };
+        window.genProtocol = () => { window.log("AI_GENERATING_PROTOCOL...", "var(--neon-blue)"); setTimeout(() => window.log("PROTOCOL_OPTIMIZED", "var(--neon-green)"), 1500); };
+        window.transferProtocol = () => { window.log("PROTOCOL_TRANSFERRED", "var(--neon-green)"); };
+        window.openStageEditor = (idx) => { document.getElementById('stage-editor-modal').style.display='flex'; };
+        window.saveStage = () => { window.log("STAGE_UPDATED", "var(--neon-green)"); document.getElementById('stage-editor-modal').style.display='none'; };
+        window.closeStageEditor = () => { document.getElementById('stage-editor-modal').style.display='none'; };
+        window.addNote = async () => {
+            if(!user) return; 
+            const n = document.getElementById('note-input').value; 
+            if(!n) return; 
+            window.log("NOTE_SAVED", "var(--neon-green)"); 
+            document.getElementById('note-input').value=''; 
         };
 
 
@@ -1689,73 +1718,26 @@
             }
 
 
-            if(btn) { btn.disabled = true; btn.innerText = "READING URL..."; }
+            if(btn) { btn.disabled = true; btn.innerText = "SCRAPING..."; }
             window.triggerActionFeedback('view-intel');
 
 
-            // 1. Direct Proxy Fetch to bypass search limitations
-            let pageText = "";
-            try {
-                const proxyRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-                if(proxyRes.ok) {
-                    const proxyData = await proxyRes.json();
-                    if(proxyData.contents) {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(proxyData.contents, 'text/html');
-                        // Strip out useless tracking code and styles to save bandwidth
-                        doc.querySelectorAll('script, style, noscript, iframe, nav, footer, header').forEach(el => el.remove());
-                        pageText = doc.body.innerText.replace(/\s+/g, ' ').trim().substring(0, 30000);
-                    }
-                }
-            } catch(e) {
-                console.warn("Direct URL fetch failed, falling back to AI Search.");
-            }
-
-
-            if(btn) btn.innerText = "ANALYZING...";
-
-
-            // 2. Strict Prompt Formulation with Anti-Bot Killswitch
-            let prompt = `You are a strict data extraction AI analyzing a real estate listing.\n`;
-            if (addr) prompt += `Target Address: "${addr}".\n`;
-            prompt += `Source URL: "${url}".\n\n`;
-
-
-            if (pageText && pageText.length > 500) {
-                prompt += `Here is the raw text scraped directly from the webpage. You MUST use ONLY this text to extract the details:\n\n---\n${pageText}\n---\n\n`;
-            } else {
-                prompt += `The webpage could not be scraped directly. Use your Google Search tool to look up the exact details for this URL and property.\n\n`;
-            }
-
-
-            prompt += `CRITICAL INSTRUCTIONS:
-            1. ANTI-BOT CHECK: If the text provided looks like a CAPTCHA, says "Access Denied", "Are you a human?", or clearly contains zero real estate data, DO NOT GUESS. You MUST return exactly this JSON: { "error": "BOT_BLOCKED" }
-            2. DO NOT HALLUCINATE OR GUESS. If a metric (like Price, Rooms, Square Footage) is NOT explicitly stated in the text/search, leave its value as an empty string "".
-            3. Extract standard specs: Address, Zoning, GLA (Square Footage), Parking Ratio, Year Built, and a brief 2-sentence analysis.
-            4. Extract financial/property specs (Price, Rooms/Units, Cap Rate, NOI, Occupancy, Building Class, etc.) and put them into the 'additional_metrics' array.
-            5. Ensure the JSON output is complete and properly closed. Do not use markdown.
+            let prompt = `You are a web scraping AI. Analyze the content of this URL: "${url}". ${addr ? `The property is located at "${addr}". ` : `Determine the property address from the listing. `}
+            Extract ALL highly relevant property data. Prioritize: Address, Zoning, GLA, Parking Ratio, Year Built, Cap Rate, NOI, and a brief 2-sentence summary. Also extract any other financial or physical metrics into 'additional_metrics'. 
             
+            CRITICAL: Ensure the JSON output is complete and properly closed. Do not use markdown.
             Respond STRICTLY with a JSON object using this structure:
             { 
               "address": "...", "zoning": "...", "gla": "...", "parking": "...", "year_built": "...", "analysis": "...", 
-              "additional_metrics": [ {"key": "PRICE", "val": "..."}, {"key": "ROOMS", "val": "..."} ]
+              "additional_metrics": [ {"key": "UPPERCASE_LABEL", "val": "Value"} ]
             }`;
 
 
             try {
-                // If we successfully grabbed the page text, we disable 'useSearch' to force it to read the text.
-                const text = await window.fetchGemini(prompt, (!pageText || pageText.length < 500));
+                const text = await window.fetchGemini(prompt, true);
                 const res = window.extractAndParseJSON(text);
                 
                 if(res) {
-                    if (res.error === "BOT_BLOCKED") {
-                        window.log("ERR: ANTI-BOT FIREWALL DETECTED", "red");
-                        if(btn) { btn.innerText = "ERR: BLOCKED"; btn.style.color = "red"; }
-                        setTimeout(() => { if(btn) { btn.disabled = false; btn.innerText = "SCRAPE"; btn.style.color = ""; } }, 4000);
-                        return;
-                    }
-
-
                     if(res.address && !addr) document.getElementById('intel-address').value = res.address;
                     if(res.zoning) document.getElementById('intel-zoning').value = res.zoning;
                     if(res.gla) document.getElementById('intel-gla').value = res.gla;
@@ -1765,9 +1747,7 @@
                     
                     if(res.additional_metrics && Array.isArray(res.additional_metrics)) {
                         res.additional_metrics.forEach(metric => {
-                            if(metric.key && metric.val && metric.val.trim() !== "") {
-                                window.addCustomField(metric.key.toUpperCase().replace(/\s+/g, '_'), metric.val);
-                            }
+                            if(metric.key && metric.val) window.addCustomField(metric.key.toUpperCase().replace(/\s+/g, '_'), metric.val);
                         });
                     }
                     window.log("URL_SCRAPE_COMPLETE", "var(--neon-green)");
@@ -1778,7 +1758,7 @@
                 window.log("URL_SCRAPE_FAILED", "red");
                 if(btn) { btn.innerText = "ERR: FAILED"; btn.style.color = "red"; }
             } finally {
-                if(btn && btn.innerText !== "ERR: BLOCKED") {
+                if(btn) {
                     setTimeout(() => { btn.disabled = false; btn.innerText = "SCRAPE"; btn.style.color = ""; }, 3000);
                 }
             }
@@ -1941,7 +1921,7 @@
 
 
             try {
-                const text = await window.fetchGemini(prompt, false, window.attachedPdfData || null);
+                const text = await window.fetchGemini(prompt, false, window.attachedPdfData || null, true);
                 const res = window.extractAndParseJSON(text);
                 
                 if(res) {
@@ -2011,25 +1991,10 @@
                 btn.disabled = false; btn.innerText = "PARSE_&_EXTRACT";
             } catch(e) {
                 console.error("Parse Error:", e);
-                btn.innerText = "ERR: FAILED"; btn.style.color = "red";
-                setTimeout(() => { btn.disabled = false; btn.innerText = "PARSE_&_EXTRACT"; btn.style.color = ""; }, 3000);
-            }
-        };
-
-
-        window.populateIntelDealStageDropdown = () => {
-            const select = document.getElementById('intel-deal-stage');
-            if(!select) return;
-            const currentVal = select.value;
-            let html = `<option value="NONE">-- UNASSIGNED (NOT IN WAR ROOM) --</option>`;
-            DEAL_STAGES.forEach((stage, idx) => {
-                html += `<option value="${stage}">${idx + 1}. ${stage.replace(/_/g, ' ')}</option>`;
-            });
-            select.innerHTML = html;
-            if(DEAL_STAGES.includes(currentVal) || currentVal === 'NONE') {
-                select.value = currentVal;
-            } else {
-                select.value = 'NONE';
+                let errorMsg = e.message && e.message.includes("HTTP") ? e.message : "FAILED";
+                btn.innerText = `ERR: ${errorMsg}`; btn.style.color = "red";
+                window.log(`ERR: INGEST_FAILED [${errorMsg}]`, "red");
+                setTimeout(() => { btn.disabled = false; btn.innerText = "PARSE_&_EXTRACT"; btn.style.color = ""; }, 4000);
             }
         };
 
