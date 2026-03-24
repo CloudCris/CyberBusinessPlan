@@ -926,13 +926,32 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, linkWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'operative-2026';
-        const apiKey = ""; 
+        // --- GITHUB DEPLOYMENT CONFIGURATION ---
+        // 1. Paste your Firebase Config below (from Firebase Console):
+        const myFirebaseConfig = {
+            apiKey: "AIzaSyD0r5wi3cMW_J7mltE4ckHxmpYC79_yQvU",
+            authDomain: "bpcyber-2431d.firebaseapp.com",
+            projectId: "bpcyber-2431d",
+            storageBucket: "bpcyber-2431d.firebasestorage.app",
+            messagingSenderId: "633336428365",
+            appId: "1:633336428365:web:176ac2cb5e84afcc8aa904"
+        };
+        
+        // 2. Paste your Google AI Studio (Gemini) API Key below:
+        const myGeminiApiKey = "AIzaSyDOx3IRlb3omi9AGBrN_qmkqQ7gL4dcIfw"; 
+
+
+        // Environment Detection (Canvas vs GitHub)
+        const isCanvasEnv = typeof __firebase_config !== 'undefined';
+        const firebaseConfig = isCanvasEnv ? JSON.parse(__firebase_config) : myFirebaseConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'operative-2026-github';
+        const apiKey = isCanvasEnv ? "" : myGeminiApiKey; 
+
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -2037,29 +2056,34 @@
             window.renderAccordion();
 
 
-            // Standard Canvas Authentication Guard
-            const initAuth = async () => {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+            // Setup Auth UI based on environment
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                // We are in the Canvas Environment - Auto Sync
+                const btnInitLink = document.getElementById('btn-init-link');
+                if (btnInitLink) {
+                    btnInitLink.addEventListener('click', async () => {
+                        btnInitLink.disabled = true;
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            triggerLoginSequence();
+                        } catch (e) {
+                            console.error("Auth error:", e);
+                            btnInitLink.disabled = false;
+                            window.log("ERR: UPLINK_FAILED", "red");
+                        }
+                    });
                 }
-            };
-
-
-            const btnInitLink = document.getElementById('btn-init-link');
-            if (btnInitLink) {
-                btnInitLink.addEventListener('click', async () => {
-                    btnInitLink.disabled = true;
-                    try {
-                        await initAuth();
-                        triggerLoginSequence();
-                    } catch (e) {
-                        console.error("Auth error:", e);
-                        btnInitLink.disabled = false;
-                        window.log("ERR: UPLINK_FAILED", "red");
-                    }
-                });
+            } else {
+                // We are on GitHub Pages - Show Manual Login
+                document.getElementById('manual-auth-fields').classList.remove('hidden');
+                document.getElementById('auth-buttons').innerHTML = `
+                    <button id="btn-login-perm" class="terminal-btn !border-neon-blue !text-neon-blue" onclick="window.loginPerm()">ESTABLISH_LINK</button>
+                    <button id="btn-login-anon" class="terminal-btn !border-gray-500 !text-gray-500" onclick="window.loginAnon()">ANON_GHOST_MODE</button>
+                `;
+                
+                // Hide the old init button if it exists
+                const oldInitBtn = document.getElementById('btn-init-link');
+                if(oldInitBtn) oldInitBtn.style.display = 'none';
             }
         };
     </script>
