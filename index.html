@@ -1001,7 +1001,9 @@
 
 
         window.fetchGemini = async (prompt, useSearch = false, pdfData = null) => {
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            // Use public model for GitHub, internal model for Canvas
+            const modelName = isCanvasEnv ? "gemini-2.5-flash-preview-09-2025" : "gemini-1.5-flash";
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
             const delays = [1000, 2000, 4000, 8000, 16000];
             
             for (let i = 0; i <= 5; i++) {
@@ -1128,8 +1130,13 @@
             }
             
             btn.disabled = true; btn.innerText = "LINKING...";
+            const email = formatCallsign(callsign);
             
             try {
+                // Link anonymous session to permanent credentials in Firebase Auth
+                const cred = EmailAuthProvider.credential(email, pass);
+                await linkWithCredential(auth.currentUser, cred);
+                
                 await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'identity'), {
                     callsign: callsign.trim(),
                     synced: true,
@@ -1144,8 +1151,28 @@
                 window.closeSyncModal();
             } catch(e) {
                 console.error("Sync Error:", e);
-                btn.innerText = "ERR: UPLINK_FAILED"; 
-                btn.style.color = "red";
+                // If account exists or linking fails, fallback to creating a fresh account
+                if (e.code === 'auth/credential-already-in-use' || e.code === 'auth/email-already-in-use') {
+                    btn.innerText = "ERR: CALLSIGN_TAKEN"; 
+                    btn.style.color = "red";
+                } else {
+                    try {
+                        await createUserWithEmailAndPassword(auth, email, pass);
+                        await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'profile', 'identity'), {
+                            callsign: callsign.trim(),
+                            synced: true,
+                            timestamp: Date.now()
+                        }, { merge: true });
+                        const warning = document.getElementById('anon-warning');
+                        if (warning) warning.classList.add('hidden');
+                        window.log("NEW_IDENTITY_CREATED", "var(--neon-green)");
+                        window.closeSyncModal();
+                        return;
+                    } catch(err) {
+                        btn.innerText = "ERR: UPLINK_FAILED"; 
+                        btn.style.color = "red";
+                    }
+                }
                 setTimeout(()=> { btn.innerText="SYNC_DATA"; btn.style.color = "var(--neon-green)"; btn.disabled=false; }, 3000); 
             }
         };
