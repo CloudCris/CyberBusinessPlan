@@ -1048,56 +1048,67 @@
 
 
         window.fetchGemini = async (prompt, useSearch = false, pdfData = null, forceJson = false) => {
-            const modelName = isCanvasEnv ? "gemini-2.5-flash-preview-09-2025" : "gemini-1.5-flash";
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-            const delays = [1000, 2000, 4000, 8000, 16000];
+            // Dynamic Fallback Matrix: Loops through available models if one throws a 404
+            const publicModels = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-pro"];
+            const modelsToTry = isCanvasEnv ? ["gemini-2.5-flash-preview-09-2025"] : publicModels;
             
             let lastErrorStr = "Unknown Error";
 
 
-            for (let i = 0; i <= 5; i++) {
-                let payload = { contents: [{ parts: [{ text: prompt }] }] };
-                if (pdfData) payload.contents[0].parts.push({ inlineData: { mimeType: "application/pdf", data: pdfData } });
+            for (let m = 0; m < modelsToTry.length; m++) {
+                const modelName = modelsToTry[m];
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
                 
-                if (useSearch) {
-                    if (i < 2) payload.tools = [{ "google_search": {} }];
-                    else if (i < 4) payload.tools = [{ "googleSearch": {} }];
-                }
-
-
-                if (forceJson && !isCanvasEnv) {
-                    payload.generationConfig = { responseMimeType: "application/json" };
-                }
-
-
-                try {
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if (text) return text;
-                    } else {
-                        const errText = await response.text();
-                        console.error(`Gemini API Error (HTTP ${response.status}):`, errText);
-                        lastErrorStr = `HTTP_${response.status}`;
-                        
-                        if (response.status === 400) {
-                            forceJson = false;
-                            useSearch = false;
-                        }
+                // 3 Retries per model to handle momentary network drops
+                for (let i = 0; i <= 2; i++) {
+                    let payload = { contents: [{ parts: [{ text: prompt }] }] };
+                    if (pdfData) payload.contents[0].parts.push({ inlineData: { mimeType: "application/pdf", data: pdfData } });
+                    
+                    if (useSearch && i === 0) {
+                        payload.tools = [{ "google_search": {} }];
                     }
-                } catch (error) { 
-                    console.error("Fetch Network Error:", error);
-                    lastErrorStr = "NETWORK_ERROR";
+
+
+                    if (forceJson && !isCanvasEnv) {
+                        payload.generationConfig = { responseMimeType: "application/json" };
+                    }
+
+
+                    try {
+                        const response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (text) return text;
+                        } else {
+                            const errText = await response.text();
+                            console.error(`Gemini API Error (${modelName}, HTTP ${response.status}):`, errText);
+                            lastErrorStr = `HTTP_${response.status}`;
+                            
+                            // If 404 (Not Found), this model doesn't exist on this API key. Skip to the next model immediately.
+                            if (response.status === 404) {
+                                break; 
+                            }
+                            
+                            // If 400 Bad Request, API rejected the config/tools. Strip them and retry safely.
+                            if (response.status === 400) {
+                                forceJson = false;
+                                useSearch = false;
+                            }
+                        }
+                    } catch (error) { 
+                        console.error("Fetch Network Error:", error);
+                        lastErrorStr = "NETWORK_ERROR";
+                    }
+                    
+                    await sleep(1000 * Math.pow(2, i)); // Exponential backoff: 1s, 2s, 4s
                 }
-                
-                if (i < 5) await sleep(delays[i]);
             }
             throw new Error(lastErrorStr);
         };
