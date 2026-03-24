@@ -995,10 +995,93 @@
         };
 
 
-        const formatCallsign = (callsign) => {
-            let clean = callsign.trim().toLowerCase();
-            if (!clean.includes('@')) clean += '@operative2026.net';
-            return clean;
+        window.fetchGemini = async (prompt, useSearch = false, pdfData = null, forceJson = false) => {
+            const modelsToTry = isCanvasEnv ? ["gemini-2.5-flash-preview-09-2025"] : ["gemini-1.5-flash"];
+            let lastErrorMsg = "API Request Failed";
+
+
+            for (const modelName of modelsToTry) {
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                
+                for (let i = 0; i < 3; i++) {
+                    let payload = { contents: [{ parts: [{ text: prompt }] }] };
+                    if (pdfData) payload.contents[0].parts.push({ inlineData: { mimeType: "application/pdf", data: pdfData } });
+                    
+                    if (useSearch && i === 0 && isCanvasEnv) {
+                        payload.tools = [{ "google_search": {} }];
+                    }
+
+
+                    if (forceJson && !isCanvasEnv && i === 0) {
+                        payload.generationConfig = { responseMimeType: "application/json" };
+                    }
+
+
+                    try {
+                        const response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            return data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        } else {
+                            const errData = await response.json().catch(() => ({}));
+                            const detailedError = errData?.error?.message || `HTTP_${response.status}`;
+                            console.error(`Gemini API Error (${modelName}):`, detailedError);
+                            lastErrorMsg = detailedError;
+                            
+                            // Fatal errors that shouldn't be retried
+                            if (response.status === 403 || response.status === 404 || detailedError.includes("API key")) {
+                                throw new Error(detailedError);
+                            }
+                            
+                            // If 400 Bad Request, strip constraints and retry
+                            if (response.status === 400) {
+                                forceJson = false;
+                                useSearch = false;
+                            }
+                        }
+                    } catch (error) { 
+                        console.error("Fetch Error:", error);
+                        lastErrorMsg = error.message || "NETWORK_ERROR";
+                        if (lastErrorMsg.includes("API key") || lastErrorMsg.includes("403") || lastErrorMsg.includes("404")) {
+                            throw new Error(lastErrorMsg); // Escalate fatal errors immediately
+                        }
+                    }
+                    
+                    await sleep(1000 * (i + 1));
+                }
+            }
+            throw new Error(lastErrorMsg);
+        };
+
+
+        window.extractAndParseJSON = (text) => {
+            if (!text) throw new Error("Empty AI Response");
+            let cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const startIdx = cleanText.indexOf('{');
+            const endIdx = cleanText.lastIndexOf('}');
+            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                cleanText = cleanText.substring(startIdx, endIdx + 1);
+            }
+            try {
+                return JSON.parse(cleanText);
+            } catch (e) {
+                console.warn("JSON parse failed, attempting auto-repair...", e);
+                let repaired = cleanText;
+                if ((repaired.match(/"/g) || []).length % 2 !== 0) repaired += '"';
+                const openBraces = (repaired.match(/\{/g) || []).length;
+                const closeBraces = (repaired.match(/\}/g) || []).length;
+                const openBrackets = (repaired.match(/\[/g) || []).length;
+                const closeBrackets = (repaired.match(/\]/g) || []).length;
+                for (let i = 0; i < (openBrackets - closeBrackets); i++) repaired += ']';
+                for (let i = 0; i < (openBraces - closeBraces); i++) repaired += '}';
+                return JSON.parse(repaired);
+            }
         };
 
 
@@ -1045,98 +1128,6 @@
         window.showConfirm = (msg, action) => { const m = document.getElementById('confirmation-modal'); const t = document.getElementById('confirm-msg'); if(!m || !t) return; t.innerText = msg; pendingConfirmAction = action; m.style.display='flex'; window.playSFX('clunk'); };
         window.closeConfirm = () => { const m = document.getElementById('confirmation-modal'); if(m) m.style.display='none'; pendingConfirmAction = null; };
         window.confirmYes = () => { if(pendingConfirmAction) pendingConfirmAction(); window.closeConfirm(); };
-
-
-        window.fetchGemini = async (prompt, useSearch = false, pdfData = null, forceJson = false) => {
-            // Dynamic Fallback Matrix: Loops through available models if one throws a 404
-            const publicModels = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-pro"];
-            const modelsToTry = isCanvasEnv ? ["gemini-2.5-flash-preview-09-2025"] : publicModels;
-            
-            let lastErrorStr = "Unknown Error";
-
-
-            for (let m = 0; m < modelsToTry.length; m++) {
-                const modelName = modelsToTry[m];
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-                
-                // 3 Retries per model to handle momentary network drops
-                for (let i = 0; i <= 2; i++) {
-                    let payload = { contents: [{ parts: [{ text: prompt }] }] };
-                    if (pdfData) payload.contents[0].parts.push({ inlineData: { mimeType: "application/pdf", data: pdfData } });
-                    
-                    if (useSearch && i === 0) {
-                        payload.tools = [{ "google_search": {} }];
-                    }
-
-
-                    if (forceJson && !isCanvasEnv) {
-                        payload.generationConfig = { responseMimeType: "application/json" };
-                    }
-
-
-                    try {
-                        const response = await fetch(endpoint, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                            if (text) return text;
-                        } else {
-                            const errText = await response.text();
-                            console.error(`Gemini API Error (${modelName}, HTTP ${response.status}):`, errText);
-                            lastErrorStr = `HTTP_${response.status}`;
-                            
-                            // If 404 (Not Found), this model doesn't exist on this API key. Skip to the next model immediately.
-                            if (response.status === 404) {
-                                break; 
-                            }
-                            
-                            // If 400 Bad Request, API rejected the config/tools. Strip them and retry safely.
-                            if (response.status === 400) {
-                                forceJson = false;
-                                useSearch = false;
-                            }
-                        }
-                    } catch (error) { 
-                        console.error("Fetch Network Error:", error);
-                        lastErrorStr = "NETWORK_ERROR";
-                    }
-                    
-                    await sleep(1000 * Math.pow(2, i)); // Exponential backoff: 1s, 2s, 4s
-                }
-            }
-            throw new Error(lastErrorStr);
-        };
-
-
-        window.extractAndParseJSON = (text) => {
-            if (!text) throw new Error("Empty AI Response");
-            let cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-            const startIdx = cleanText.indexOf('{');
-            const endIdx = cleanText.lastIndexOf('}');
-            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-                cleanText = cleanText.substring(startIdx, endIdx + 1);
-            }
-            try {
-                return JSON.parse(cleanText);
-            } catch (e) {
-                console.warn("JSON parse failed, attempting auto-repair...", e);
-                let repaired = cleanText;
-                if ((repaired.match(/"/g) || []).length % 2 !== 0) repaired += '"';
-                const openBraces = (repaired.match(/\{/g) || []).length;
-                const closeBraces = (repaired.match(/\}/g) || []).length;
-                const openBrackets = (repaired.match(/\[/g) || []).length;
-                const closeBrackets = (repaired.match(/\]/g) || []).length;
-                for (let i = 0; i < (openBrackets - closeBrackets); i++) repaired += ']';
-                for (let i = 0; i < (openBraces - closeBraces); i++) repaired += '}';
-                return JSON.parse(repaired);
-            }
-        };
 
 
         // --- AUTH LOGIC ---
@@ -1276,6 +1267,12 @@
             window.log("NOTE_SAVED", "var(--neon-green)"); 
             document.getElementById('note-input').value=''; 
         };
+        window.deleteProtocolTask = (day, idx) => { window.log("PROTOCOL_TASK_DELETED", "var(--neon-red)"); };
+        window.changeMarketingMonth = (dir) => { currentMktDate.setMonth(currentMktDate.getMonth() + dir); window.renderMarketingMonth(); window.renderMarketingYear(); window.playSFX('clunk'); };
+        window.exportCalendarICS = () => { window.log("CALENDAR_EXPORT_INITIATED", "var(--neon-green)"); };
+        window.exportPropertyCSV = () => { window.log("CSV_EXPORT_INITIATED", "var(--neon-green)"); };
+        window.exportPropertyPDF = () => { window.log("PDF_EXPORT_INITIATED", "var(--neon-green)"); };
+        window.pushToGCal = (title, dateStr, desc) => { window.log(`SYNCING [${title}] TO GCAL...`, "var(--neon-green)"); };
 
 
         // --- GLOBAL RENDERERS ---
@@ -1687,69 +1684,103 @@
         };
 
 
-        window.autoScanProperty = async () => {
-            const addr = document.getElementById('intel-address').value;
-            const url = document.getElementById('intel-url').value; 
-            if(!addr && !url) {
-                window.log("ERR: REQUIRE_ADDRESS_OR_URL", "red");
-                return;
+        window.attachedPdfData = null;
+        window.handleFileUpload = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('upload-status').classList.remove('hidden');
+            document.getElementById('attached-file-name').innerText = file.name;
+            if (file.type === 'application/pdf') {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    window.attachedPdfData = event.target.result.split(',')[1];
+                    const txtArea = document.getElementById('om-raw-text');
+                    txtArea.value = `[ENCRYPTED PDF DOCUMENT ATTACHED: ${file.name}]\n\n>> UPLINK READY.`;
+                    txtArea.disabled = true; txtArea.classList.add('opacity-50');
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type === 'text/plain') {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const txtArea = document.getElementById('om-raw-text');
+                    txtArea.value = event.target.result;
+                    window.attachedPdfData = null;
+                    txtArea.disabled = false; txtArea.classList.remove('opacity-50');
+                };
+                reader.readAsText(file);
             }
-            const btn = document.getElementById('btn-fetch-intel');
-            if(btn) { btn.disabled = true; btn.innerText = "SCANNING..."; }
-            let prompt = `Search web for commercial property: ${addr ? `"${addr}"` : "at the provided URL"}. URL: "${url}". Return JSON: { "address": "...", "zoning": "...", "gla": "...", "parking": "...", "year_built": "...", "analysis": "..." }. No markdown. CRITICAL: DO NOT guess data. Ensure JSON is closed.`;
-            window.triggerActionFeedback('view-intel');
-            try {
-                const text = await window.fetchGemini(prompt, true);
-                if(text) {
-                    const res = window.extractAndParseJSON(text);
-                    if(res.address && !addr) document.getElementById('intel-address').value = res.address;
-                    if(res.zoning) document.getElementById('intel-zoning').value = res.zoning;
-                    if(res.gla) document.getElementById('intel-gla').value = res.gla;
-                    if(res.parking) document.getElementById('intel-parking').value = res.parking;
-                    if(res.year_built) document.getElementById('intel-year').value = res.year_built;
-                    if(res.analysis) document.getElementById('intel-desc').value = res.analysis;
-                    window.log("SCAN_COMPLETE", "var(--neon-green)");
-                    window.playSFX('confirm');
-                }
-            } catch(e) { window.log("ERR: SCAN_FAILED", "red"); } finally { if(btn) { btn.disabled = false; btn.innerText = "AI_SCAN"; } }
         };
 
 
-        window.scrapeUrlData = async () => {
-            const addr = document.getElementById('intel-address').value;
-            const url = document.getElementById('intel-url').value; 
-            const btn = document.getElementById('btn-scrape-url');
+        window.openOmIngest = () => {
+            document.getElementById('om-raw-text').value = '';
+            document.getElementById('om-raw-text').disabled = false;
+            document.getElementById('om-raw-text').classList.remove('opacity-50');
+            document.getElementById('om-file-upload').value = '';
+            document.getElementById('upload-status').classList.add('hidden');
+            window.attachedPdfData = null;
+            document.getElementById('om-ingest-modal').style.display = 'flex';
+            window.playSFX('clunk');
+        };
+
+
+        window.closeOmIngest = () => { document.getElementById('om-ingest-modal').style.display = 'none'; };
+
+
+        window.parseOmDocument = async () => {
+            const rawText = document.getElementById('om-raw-text').value;
+            if((!rawText || rawText.trim() === '') && !window.attachedPdfData) return;
             
-            if(!url) {
-                if(btn) {
-                    const oldText = btn.innerText; btn.innerText = "ERR: NO_URL"; btn.style.color = "red";
-                    setTimeout(() => { btn.innerText = oldText; btn.style.color = ""; }, 3000);
-                }
-                window.log("ERR: NO_URL_PROVIDED", "red"); return;
-            }
-
-
-            if(btn) { btn.disabled = true; btn.innerText = "SCRAPING..."; }
+            const btn = document.getElementById('btn-om-parse');
+            let propAddr = document.getElementById('intel-address').value;
+            
+            btn.disabled = true; btn.innerText = "EXTRACTING_DATA...";
             window.triggerActionFeedback('view-intel');
 
 
-            let prompt = `You are a web scraping AI. Analyze the content of this URL: "${url}". ${addr ? `The property is located at "${addr}". ` : `Determine the property address from the listing. `}
-            Extract ALL highly relevant property data. Prioritize: Address, Zoning, GLA, Parking Ratio, Year Built, Cap Rate, NOI, and a brief 2-sentence summary. Also extract any other financial or physical metrics into 'additional_metrics'. 
+            let prompt = `Extract highly relevant commercial real estate data from the following text or document.
+            CRITICAL INSTRUCTION: DO NOT hallucinate. Only extract what is present in the provided text.
+            If the property address is visible, you MUST extract it.
             
-            CRITICAL: Ensure the JSON output is complete and properly closed. Do not use markdown.
-            Respond STRICTLY with a JSON object using this structure:
+            Return ONLY a valid JSON object (no markdown, no code fences):
             { 
-              "address": "...", "zoning": "...", "gla": "...", "parking": "...", "year_built": "...", "analysis": "...", 
-              "additional_metrics": [ {"key": "UPPERCASE_LABEL", "val": "Value"} ]
+              "address": "...", 
+              "zoning": "...", 
+              "gla": "...", 
+              "parking": "...", 
+              "year_built": "...", 
+              "analysis": "...", 
+              "additional_metrics": [ {"key": "PRICE", "val": "Value"}, {"key": "ROOMS", "val": "Value"}, {"key": "CAP_RATE", "val": "Value"} ], 
+              "contract_dates": { "execDate": "YYYY-MM-DD", "optDate": "YYYY-MM-DD", "discDate": "YYYY-MM-DD", "closeDate": "YYYY-MM-DD" }, 
+              "marketing_events": [ {"channel": "EMAIL_BLAST", "date": "YYYY-MM-DD"} ] 
             }`;
 
 
+            if (!window.attachedPdfData) {
+                prompt += `\n\nRaw Text to Analyze:\n"${rawText}"`;
+            }
+
+
             try {
-                const text = await window.fetchGemini(prompt, true);
+                // Pass false for forceJson as standard markdown stripping is safer for public API keys
+                const text = await window.fetchGemini(prompt, false, window.attachedPdfData || null, false);
                 const res = window.extractAndParseJSON(text);
                 
                 if(res) {
-                    if(res.address && !addr) document.getElementById('intel-address').value = res.address;
+                    if(res.address && !propAddr) {
+                        document.getElementById('intel-address').value = res.address;
+                        propAddr = res.address;
+                    }
+
+
+                    if(!propAddr) {
+                        window.log("ERR: ADDRESS_NOT_FOUND_IN_TEXT", "red");
+                        btn.innerText = "ERR: NO_ADDRESS_FOUND"; btn.style.color = "red";
+                        setTimeout(() => { btn.disabled = false; btn.innerText = "PARSE_&_EXTRACT"; btn.style.color = ""; }, 3000);
+                        return;
+                    }
+
+
                     if(res.zoning) document.getElementById('intel-zoning').value = res.zoning;
                     if(res.gla) document.getElementById('intel-gla').value = res.gla;
                     if(res.parking) document.getElementById('intel-parking').value = res.parking;
@@ -1757,21 +1788,55 @@
                     if(res.analysis) document.getElementById('intel-desc').value = res.analysis;
                     
                     if(res.additional_metrics && Array.isArray(res.additional_metrics)) {
-                        res.additional_metrics.forEach(metric => {
-                            if(metric.key && metric.val) window.addCustomField(metric.key.toUpperCase().replace(/\s+/g, '_'), metric.val);
+                        res.additional_metrics.forEach(m => {
+                            if(m.key && m.val && m.val.trim() !== "") {
+                                window.addCustomField(m.key.toUpperCase().replace(/\s+/g, '_'), m.val);
+                            }
                         });
                     }
-                    window.log("URL_SCRAPE_COMPLETE", "var(--neon-green)");
+                    
+                    if(res.marketing_events && Array.isArray(res.marketing_events)) {
+                        for (const ev of res.marketing_events) {
+                            if (ev.channel && ev.date) {
+                                await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'marketing_ops'), { property: propAddr, channel: ev.channel.toUpperCase(), date: ev.date, status: 'PENDING', timestamp: Date.now() });
+                            }
+                        }
+                    }
+                    
+                    if(res.contract_dates && Object.keys(res.contract_dates).length > 0) {
+                        const cDates = res.contract_dates;
+                        const existingDeal = activeDeals.find(d => d.name === propAddr);
+                        const dealData = {};
+                        if(cDates.execDate) dealData.execDate = cDates.execDate;
+                        if(cDates.optDate) dealData.optDate = cDates.optDate;
+                        if(cDates.discDate) dealData.discDate = cDates.discDate;
+                        if(cDates.closeDate) dealData.closeDate = cDates.closeDate;
+
+
+                        if (existingDeal) {
+                            await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'active_deals', existingDeal.id), dealData);
+                        } else {
+                            dealData.name = propAddr; dealData.value = 0; dealData.comm = 3;
+                            dealData.stage = DEAL_STAGES.length > 2 ? DEAL_STAGES[2] : DEAL_STAGES[0]; 
+                            dealData.timestamp = Date.now();
+                            await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'active_deals'), dealData);
+                        }
+                    }
+                    
+                    const saveBtn = document.querySelector('button[onclick="window.savePropertyIntel(this)"]');
+                    if (saveBtn) await window.savePropertyIntel(saveBtn);
+                    
+                    window.closeOmIngest(); 
+                    window.addXP(40); 
                     window.playSFX('confirm');
                 }
+                btn.disabled = false; btn.innerText = "PARSE_&_EXTRACT";
             } catch(e) {
-                console.error("Scrape Error:", e);
-                window.log("URL_SCRAPE_FAILED", "red");
-                if(btn) { btn.innerText = "ERR: FAILED"; btn.style.color = "red"; }
-            } finally {
-                if(btn) {
-                    setTimeout(() => { btn.disabled = false; btn.innerText = "SCRAPE"; btn.style.color = ""; }, 3000);
-                }
+                console.error("Parse Error:", e);
+                let errorMsg = e.message && e.message.includes("HTTP") ? e.message : "FAILED";
+                btn.innerText = `ERR: ${errorMsg}`; btn.style.color = "red";
+                window.log(`ERR: INGEST_FAILED [${errorMsg}]`, "red");
+                setTimeout(() => { btn.disabled = false; btn.innerText = "PARSE_&_EXTRACT"; btn.style.color = ""; }, 4000);
             }
         };
 
@@ -1852,162 +1917,6 @@
         window.linkCrmContact = () => { const input = document.getElementById('intel-crm-link'); const val = input.value; const match = contacts.find(c => `${c.name} [${c.role || 'N/A'}]` === val); if (match && !currentLinkedContacts.includes(match.id)) { currentLinkedContacts.push(match.id); window.renderLinkedContacts(); } input.value = ''; };
         window.removeLinkedContact = (id) => { currentLinkedContacts = currentLinkedContacts.filter(x => x !== id); window.renderLinkedContacts(); window.playSFX('clunk'); };
         window.renderLinkedContacts = () => { const c = document.getElementById('intel-linked-contacts'); if(c) c.innerHTML = currentLinkedContacts.map(id => { const m = contacts.find(x=>x.id===id); return m ? `<div class="bg-black/60 border border-neon-blue text-[9px] p-1 flex gap-1"><span class="cursor-pointer hover:text-neon-pink" onclick="window.switchTab('crm'); window.loadContact('${m.id}')">${window.escapeHtml(m.name)}</span><span onclick="window.removeLinkedContact('${id}')" class="text-red-500 cursor-pointer">x</span></div>` : ''; }).join(''); };
-
-
-        window.attachedPdfData = null;
-        window.handleFileUpload = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            document.getElementById('upload-status').classList.remove('hidden');
-            document.getElementById('attached-file-name').innerText = file.name;
-            if (file.type === 'application/pdf') {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    window.attachedPdfData = event.target.result.split(',')[1];
-                    const txtArea = document.getElementById('om-raw-text');
-                    txtArea.value = `[ENCRYPTED PDF DOCUMENT ATTACHED: ${file.name}]\n\n>> UPLINK READY.`;
-                    txtArea.disabled = true; txtArea.classList.add('opacity-50');
-                };
-                reader.readAsDataURL(file);
-            } else if (file.type === 'text/plain') {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const txtArea = document.getElementById('om-raw-text');
-                    txtArea.value = event.target.result;
-                    window.attachedPdfData = null;
-                    txtArea.disabled = false; txtArea.classList.remove('opacity-50');
-                };
-                reader.readAsText(file);
-            }
-        };
-
-
-        window.openOmIngest = () => {
-            document.getElementById('om-raw-text').value = '';
-            document.getElementById('om-raw-text').disabled = false;
-            document.getElementById('om-raw-text').classList.remove('opacity-50');
-            document.getElementById('om-file-upload').value = '';
-            document.getElementById('upload-status').classList.add('hidden');
-            window.attachedPdfData = null;
-            document.getElementById('om-ingest-modal').style.display = 'flex';
-            window.playSFX('clunk');
-        };
-
-
-        window.closeOmIngest = () => { document.getElementById('om-ingest-modal').style.display = 'none'; };
-
-
-        window.parseOmDocument = async () => {
-            const rawText = document.getElementById('om-raw-text').value;
-            if((!rawText || rawText.trim() === '') && !window.attachedPdfData) return;
-            
-            const btn = document.getElementById('btn-om-parse');
-            let propAddr = document.getElementById('intel-address').value;
-            
-            btn.disabled = true; btn.innerText = "EXTRACTING_DATA...";
-            window.triggerActionFeedback('view-intel');
-
-
-            let prompt = `Extract highly relevant commercial real estate data from the following text or document.
-            CRITICAL INSTRUCTION: DO NOT hallucinate. Only extract what is present in the provided text.
-            If the property address is visible, you MUST extract it.
-            
-            Return ONLY a valid JSON object (no markdown, no code fences):
-            { 
-              "address": "...", 
-              "zoning": "...", 
-              "gla": "...", 
-              "parking": "...", 
-              "year_built": "...", 
-              "analysis": "...", 
-              "additional_metrics": [ {"key": "PRICE", "val": "Value"}, {"key": "ROOMS", "val": "Value"}, {"key": "CAP_RATE", "val": "Value"} ], 
-              "contract_dates": { "execDate": "YYYY-MM-DD", "optDate": "YYYY-MM-DD", "discDate": "YYYY-MM-DD", "closeDate": "YYYY-MM-DD" }, 
-              "marketing_events": [ {"channel": "EMAIL_BLAST", "date": "YYYY-MM-DD"} ] 
-            }`;
-
-
-            if (!window.attachedPdfData) {
-                prompt += `\n\nRaw Text to Analyze:\n"${rawText}"`;
-            }
-
-
-            try {
-                const text = await window.fetchGemini(prompt, false, window.attachedPdfData || null, true);
-                const res = window.extractAndParseJSON(text);
-                
-                if(res) {
-                    if(res.address && !propAddr) {
-                        document.getElementById('intel-address').value = res.address;
-                        propAddr = res.address;
-                    }
-
-
-                    if(!propAddr) {
-                        window.log("ERR: ADDRESS_NOT_FOUND_IN_TEXT", "red");
-                        btn.innerText = "ERR: NO_ADDRESS_FOUND"; btn.style.color = "red";
-                        setTimeout(() => { btn.disabled = false; btn.innerText = "PARSE_&_EXTRACT"; btn.style.color = ""; }, 3000);
-                        return;
-                    }
-
-
-                    if(res.zoning) document.getElementById('intel-zoning').value = res.zoning;
-                    if(res.gla) document.getElementById('intel-gla').value = res.gla;
-                    if(res.parking) document.getElementById('intel-parking').value = res.parking;
-                    if(res.year_built) document.getElementById('intel-year').value = res.year_built;
-                    if(res.analysis) document.getElementById('intel-desc').value = res.analysis;
-                    
-                    if(res.additional_metrics && Array.isArray(res.additional_metrics)) {
-                        res.additional_metrics.forEach(m => {
-                            if(m.key && m.val && m.val.trim() !== "") {
-                                window.addCustomField(m.key.toUpperCase().replace(/\s+/g, '_'), m.val);
-                            }
-                        });
-                    }
-                    
-                    if(res.marketing_events && Array.isArray(res.marketing_events)) {
-                        for (const ev of res.marketing_events) {
-                            if (ev.channel && ev.date) {
-                                await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'marketing_ops'), { property: propAddr, channel: ev.channel.toUpperCase(), date: ev.date, status: 'PENDING', timestamp: Date.now() });
-                            }
-                        }
-                    }
-                    
-                    if(res.contract_dates && Object.keys(res.contract_dates).length > 0) {
-                        const cDates = res.contract_dates;
-                        const existingDeal = activeDeals.find(d => d.name === propAddr);
-                        const dealData = {};
-                        if(cDates.execDate) dealData.execDate = cDates.execDate;
-                        if(cDates.optDate) dealData.optDate = cDates.optDate;
-                        if(cDates.discDate) dealData.discDate = cDates.discDate;
-                        if(cDates.closeDate) dealData.closeDate = cDates.closeDate;
-
-
-                        if (existingDeal) {
-                            await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'active_deals', existingDeal.id), dealData);
-                        } else {
-                            dealData.name = propAddr; dealData.value = 0; dealData.comm = 3;
-                            dealData.stage = DEAL_STAGES.length > 2 ? DEAL_STAGES[2] : DEAL_STAGES[0]; 
-                            dealData.timestamp = Date.now();
-                            await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'active_deals'), dealData);
-                        }
-                    }
-                    
-                    const saveBtn = document.querySelector('button[onclick="window.savePropertyIntel(this)"]');
-                    if (saveBtn) await window.savePropertyIntel(saveBtn);
-                    
-                    window.closeOmIngest(); 
-                    window.addXP(40); 
-                    window.playSFX('confirm');
-                }
-                btn.disabled = false; btn.innerText = "PARSE_&_EXTRACT";
-            } catch(e) {
-                console.error("Parse Error:", e);
-                let errorMsg = e.message && e.message.includes("HTTP") ? e.message : "FAILED";
-                btn.innerText = `ERR: ${errorMsg}`; btn.style.color = "red";
-                window.log(`ERR: INGEST_FAILED [${errorMsg}]`, "red");
-                setTimeout(() => { btn.disabled = false; btn.innerText = "PARSE_&_EXTRACT"; btn.style.color = ""; }, 4000);
-            }
-        };
 
 
         // --- SYSTEM LISTENER ---
